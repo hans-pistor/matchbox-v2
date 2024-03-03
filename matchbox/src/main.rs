@@ -6,8 +6,8 @@ use crate::sandbox::SandboxInitializer;
 
 pub mod jailer;
 pub mod sandbox;
-pub mod util;
 pub mod server;
+pub mod util;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -24,4 +24,3 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

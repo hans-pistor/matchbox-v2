@@ -1,7 +1,13 @@
 use std::{collections::HashMap, sync::Arc};
 
-use axum::{routing::{get, post}, Router};
-use tokio::{net::{TcpListener, ToSocketAddrs}, sync::RwLock};
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use tokio::{
+    net::{TcpListener, ToSocketAddrs},
+    sync::RwLock,
+};
 
 use crate::sandbox::{Sandbox, SandboxFactory};
 
@@ -12,7 +18,7 @@ pub struct ApplicationState(Arc<ApplicationStateInner>);
 
 pub struct ApplicationStateInner {
     sandbox_factory: SandboxFactory,
-    sandboxes: RwLock<HashMap<String, Sandbox>>
+    sandboxes: RwLock<HashMap<String, Sandbox>>,
 }
 
 impl ApplicationState {
@@ -38,10 +44,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn new(
-        address: impl ToSocketAddrs,
-        state: ApplicationState,
-    ) -> anyhow::Result<Self> {
+    pub async fn new(address: impl ToSocketAddrs, state: ApplicationState) -> anyhow::Result<Self> {
         let listener = TcpListener::bind(address).await?;
         let router = Router::new()
             .route("/sandbox", get(routes::list_sandboxes))
