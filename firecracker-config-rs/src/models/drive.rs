@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::rate_limiter::RateLimiter;
+use crate::models::rate_limiter::RateLimiter;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub enum CacheType {

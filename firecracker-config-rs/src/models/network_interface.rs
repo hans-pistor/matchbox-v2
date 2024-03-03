@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
-use crate::rate_limiter::RateLimiter;
+use crate::models::rate_limiter::RateLimiter;
 
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
 #[builder(setter(into))]
