@@ -47,6 +47,7 @@ impl Sandbox {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct SandboxFactory {
     firecracker_factory: JailedFirecrackerFactory,
     sandbox_initializer: SandboxInitializer,
@@ -104,6 +105,7 @@ impl SandboxFactory {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct SandboxInitializer {
     rootfs: PathBuf,
     kernel_image: PathBuf,

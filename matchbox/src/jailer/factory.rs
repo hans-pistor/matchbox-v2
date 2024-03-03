@@ -4,6 +4,7 @@ use super::{
 use std::{path::PathBuf, process::Command};
 use uuid::Uuid;
 
+#[derive(Clone, Debug)]
 pub struct JailedFirecrackerFactory {
     jailer_path: PathBuf,
     firecracker_path: PathBuf,
