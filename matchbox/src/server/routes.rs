@@ -1,4 +1,8 @@
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{
+    extract::{Path, State},
+    response::IntoResponse,
+    Json,
+};
 use serde::{Deserialize, Serialize};
 
 use super::ApplicationState;
@@ -25,11 +29,11 @@ pub async fn list_sandboxes(
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CreateSandboxResponse {
+pub struct SandboxDetailResponse {
     id: String,
 }
 
-impl IntoResponse for CreateSandboxResponse {
+impl IntoResponse for SandboxDetailResponse {
     fn into_response(self) -> axum::response::Response {
         Json(self).into_response()
     }
@@ -37,7 +41,7 @@ impl IntoResponse for CreateSandboxResponse {
 
 pub async fn create_sandbox(
     State(state): State<ApplicationState>,
-) -> ApiResult<CreateSandboxResponse> {
+) -> ApiResult<SandboxDetailResponse> {
     let factory = state.sandbox_factory();
     let mut sandbox = factory.spawn_sandbox().await?;
     sandbox.start().await?;
@@ -46,7 +50,24 @@ pub async fn create_sandbox(
         let mut sandboxes = state.sandboxes().write().await;
         sandboxes.insert(id.clone(), sandbox);
     }
-    Ok(CreateSandboxResponse { id })
+    Ok(SandboxDetailResponse { id })
+}
+
+pub async fn delete_sandbox(
+    Path(sandbox_id): Path<String>,
+    State(state): State<ApplicationState>,
+) -> ApiResult<SandboxDetailResponse> {
+    let sandbox = {
+        let mut sandboxes = state.sandboxes().write().await;
+        sandboxes.remove(&sandbox_id)
+    };
+
+    match sandbox {
+        Some(sandbox) => Ok(SandboxDetailResponse {
+            id: sandbox.id().to_string(),
+        }),
+        None => Err(anyhow::anyhow!("Sandbox with id {sandbox_id} does not exist").into()),
+    }
 }
 
 mod error {

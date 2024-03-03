@@ -47,6 +47,18 @@ impl Sandbox {
     }
 }
 
+impl Drop for Sandbox {
+    fn drop(&mut self) {
+        if let Err(e) = self.jailed_firecracker.kill() {
+            println!("Failed to kill firecracker process: {e:?}");
+        };
+
+        let root_directory = self.path_resolver().resolve("/");
+        let vm_directory = root_directory.parent().unwrap();
+        std::fs::remove_dir_all(vm_directory).unwrap();
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct SandboxFactory {
     firecracker_factory: JailedFirecrackerFactory,

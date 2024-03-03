@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use axum::{
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use tokio::{
@@ -49,6 +49,7 @@ impl Application {
         let router = Router::new()
             .route("/sandbox", get(routes::list_sandboxes))
             .route("/sandbox", post(routes::create_sandbox))
+            .route("/sandbox/:id", delete(routes::delete_sandbox))
             .with_state(state);
         Ok(Application { listener, router })
     }
