@@ -24,6 +24,7 @@ RUN rc-update add devfs boot \
 
 COPY etc /etc
 COPY root /root
+COPY usr /usr
 
 # Need to start rngd before sshd otherwise VM startup will hang
 # This still takes ~5s so there's room for improvement
