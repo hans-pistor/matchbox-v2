@@ -1,0 +1,16 @@
+[package]
+name = "matchbox"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.80"
+derive_builder = "0.20.0"
+firecracker-config-rs = { path = "../firecracker-config-rs/" }
+hyper = { version = "0.14", features = ["client", "http2"] }
+hyperlocal = "0.8.0"
+serde = { version = "1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+tokio = { version = "1.36.0", features = ["full"] }
+users = "0.11.0"
+uuid = { version = "1.7.0", features = ["v4"] }
