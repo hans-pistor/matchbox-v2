@@ -22,5 +22,5 @@ pub struct NetworkInterface {
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Rate limiter for sending packets
-    pub tx_rate_limiter: Option<RateLimiter>
+    pub tx_rate_limiter: Option<RateLimiter>,
 }

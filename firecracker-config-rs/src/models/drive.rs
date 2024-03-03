@@ -5,18 +5,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::rate_limiter::RateLimiter;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
 pub enum CacheType {
     #[default]
     Unsafe,
-    Writeback
+    Writeback,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
 pub enum IoEngine {
     #[default]
     Sync,
-    Async
+    Async,
 }
 
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
@@ -43,13 +43,10 @@ pub struct Drive {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Is the block device read only
     pub is_read_only: Option<bool>,
-    #[builder(setter(strip_option), default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Host level path for the block drive
-    pub path_on_host: Option<PathBuf>,
+    pub path_on_host: PathBuf,
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Rate limiter for operations on the block drive
     pub rate_limiter: Option<RateLimiter>,
-
 }

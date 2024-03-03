@@ -19,7 +19,7 @@ pub struct TokenBucket {
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The initial size of a token bucket
-    pub one_time_burst: Option<u64>
+    pub one_time_burst: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
