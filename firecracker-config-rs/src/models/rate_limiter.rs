@@ -12,14 +12,14 @@ use serde::{Deserialize, Serialize};
 /// by the `refill_rate`.
 pub struct TokenBucket {
     /// The total number of tokens this bucket can hold
-    size: u64,
+    pub size: u64,
     /// The amount of milliseconds it takes for the bucket to refill
-    refill_time: u64,
+    pub refill_time: u64,
 
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The initial size of a token bucket
-    one_time_burst: Option<u64>
+    pub one_time_burst: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
@@ -30,9 +30,9 @@ pub struct RateLimiter {
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Token bucket with bytes as tokens
-    bandwidth: Option<TokenBucket>,
+    pub bandwidth: Option<TokenBucket>,
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Token bucket with operations as tokens
-    ops: Option<TokenBucket>,
+    pub ops: Option<TokenBucket>,
 }

@@ -4,8 +4,8 @@ use super::{bootsource::BootSource, drive::Drive, logger::Logger, network_interf
 #[derive(Builder, Clone, PartialEq, Debug, Default)]
 #[builder(setter(into, strip_option), default)]
 struct VirtualMachine {
-    logger: Option<Logger>,
-    boot_source: BootSource,
-    drives: Vec<Drive>,
-    network_interfaces: Vec<NetworkInterface>
+    pub logger: Option<Logger>,
+    pub boot_source: BootSource,
+    pub drives: Vec<Drive>,
+    pub network_interfaces: Vec<NetworkInterface>
 }
