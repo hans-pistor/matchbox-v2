@@ -37,7 +37,7 @@ pub struct Drive {
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Represent the unique id of the boot partition of this device. It is optional and it will be
-    /// taken into account only if the is_root_device field is true.
+    /// taken into account only if the `is_root_device` field is true.
     partuuid: Option<String>,
     #[builder(setter(strip_option), default)]
     #[serde(skip_serializing_if = "Option::is_none")]
