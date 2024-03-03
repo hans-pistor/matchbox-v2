@@ -29,8 +29,8 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub fn get_host_path(&self, jailed_path: impl Into<PathBuf>) -> PathBuf {
-        self.jailed_firecracker.path_resolver.resolve(jailed_path)
+    pub fn id(&self) -> Uuid {
+        self.uuid
     }
 
     pub fn path_resolver(&self) -> &JailedPathResolver {
@@ -198,8 +198,9 @@ impl SandboxInitializer {
     }
 
     async fn setup_drives(&self, sandbox: &Sandbox) -> anyhow::Result<()> {
-        std::fs::create_dir_all(sandbox.path_resolver().resolve("/drives/"))?;
-        util::copy(&self.rootfs, sandbox.get_host_path("/drives/rootfs.ext4"));
+        let rootfs_path = sandbox.path_resolver().resolve("/drives/rootfs.ext4");
+        std::fs::create_dir_all(rootfs_path.parent().unwrap())?;
+        util::copy(&self.rootfs, rootfs_path);
 
         for drive in &sandbox.virtual_machine_config.drives {
             let path = format!("/drives/{}", drive.drive_id);
