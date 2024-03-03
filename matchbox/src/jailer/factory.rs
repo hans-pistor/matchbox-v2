@@ -59,7 +59,7 @@ impl JailedFirecrackerFactory {
         let process = cmd.spawn().unwrap();
         let root_directory = self
             .chroot_base_dir
-            .join(&self.firecracker_path.file_stem().unwrap())
+            .join(self.firecracker_path.file_stem().unwrap())
             .join(vm_id.to_string())
             .join("root");
         let resolver = JailedPathResolver { root_directory };

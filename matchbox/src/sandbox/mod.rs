@@ -165,6 +165,7 @@ impl SandboxInitializer {
         OpenOptions::new()
             .create(true)
             .write(true)
+            .truncate(true)
             .open(&log_file_path_on_host)?;
 
         sandbox
