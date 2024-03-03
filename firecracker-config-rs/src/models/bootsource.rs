@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
 #[builder(setter(into))]
 /// Boot source descriptor.
-struct BootSource {
+pub struct BootSource {
     /// Host level path to the kernel image used to boot the guest
     kernel_image_path: PathBuf,
     #[builder(setter(strip_option), default)]

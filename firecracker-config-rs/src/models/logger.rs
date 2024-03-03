@@ -17,7 +17,7 @@ pub enum LogLevel {
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
 #[builder(setter(into))]
 /// Describes the configuration options for the logging capability
-struct Logger {
+pub struct Logger {
     #[builder(setter(strip_option), default = "LogLevel::Info")]
     /// Set the level
     level: LogLevel,

@@ -6,7 +6,7 @@ use crate::models::rate_limiter::RateLimiter;
 #[derive(Serialize, Deserialize, Builder, Clone, PartialEq, Debug, Default)]
 #[builder(setter(into))]
 /// Defines a network interface
-struct NetworkInterface {
+pub struct NetworkInterface {
     /// Host level path for the guest network interface
     host_dev_name: String,
     /// Identifier for the network interface
