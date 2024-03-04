@@ -15,14 +15,6 @@ pub struct JailedFirecracker {
     pub client: FirecrackerClient,
 }
 
-impl JailedFirecracker {
-    pub fn kill(&mut self) -> anyhow::Result<()> {
-        self.process
-            .kill()
-            .context("failed to kill firecracker process")
-    }
-}
-
 #[derive(Debug)]
 pub struct JailedPathResolver {
     root_directory: PathBuf,

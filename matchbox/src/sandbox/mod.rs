@@ -1,8 +1,9 @@
 use std::fs::OpenOptions;
 use std::path::PathBuf;
+use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
 use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
@@ -15,8 +16,10 @@ use crate::jailer::factory::JailedFirecrackerFactory;
 use crate::jailer::{JailedFirecracker, JailedPathResolver};
 use crate::util;
 
+use self::id::VmIdentifier;
 use self::network::Network;
 
+pub mod id;
 pub mod network;
 
 #[derive(Debug, Clone, Copy)]
@@ -28,7 +31,7 @@ pub enum SandboxState {
 
 #[derive(Debug)]
 pub struct Sandbox {
-    uuid: Uuid,
+    id: VmIdentifier,
     state: SandboxState,
     network: Network,
     pub jailed_firecracker: JailedFirecracker,
@@ -36,8 +39,8 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub fn id(&self) -> Uuid {
-        self.uuid
+    pub fn id(&self) -> &str {
+        self.id.id()
     }
 
     pub fn path_resolver(&self) -> &JailedPathResolver {
@@ -56,10 +59,10 @@ impl Sandbox {
 
 impl Drop for Sandbox {
     fn drop(&mut self) {
-        if let Err(e) = self.jailed_firecracker.kill() {
-            println!("Failed to kill firecracker process: {e:?}");
-        };
-
+        let mut cmd = Command::new("tmux");
+        cmd.args(["kill-session", "-t", self.id()])
+            .output()
+            .unwrap();
         let root_directory = self.path_resolver().resolve("/");
         let vm_directory = root_directory.parent().unwrap();
         std::fs::remove_dir_all(vm_directory).unwrap();
@@ -84,7 +87,7 @@ impl SandboxFactory {
     }
 
     pub async fn spawn_sandbox(&self) -> anyhow::Result<Sandbox> {
-        let uuid = Uuid::new_v4();
+        let id = VmIdentifier::default();
         let virtual_machine_config = VirtualMachineBuilder::default()
             .logger(
                 LoggerBuilder::default()
@@ -116,13 +119,13 @@ impl SandboxFactory {
                 .build()?
             ])
             .build()?;
-        let network = Network::new(uuid.to_string(), &virtual_machine_config.network_interfaces)?;
+        let network = Network::new(&id, &virtual_machine_config.network_interfaces)?;
         let jailed_firecracker = self
             .firecracker_factory
-            .spawn_jailed_firecracker(uuid, network.netns_path());
+            .spawn_jailed_firecracker(&id.id(), &network.netns_path()?);
 
         let sandbox = Sandbox {
-            uuid,
+            id,
             network,
             state: SandboxState::Stopped,
             jailed_firecracker,

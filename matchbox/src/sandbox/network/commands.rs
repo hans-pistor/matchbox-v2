@@ -8,12 +8,30 @@ pub enum IpCommand {
     CreateTapDevice { device: String },
     AddAddress { cidr_block: String, device: String },
     Activate { device: String },
+    CreateVethPair { veth: String, vpeer: String },
+    MoveDeviceToNamespace { device: String, namespace: String },
+    AddDefaultRoute { address: String },
 }
 
 impl IpCommand {
     pub fn output(self) -> anyhow::Result<Output> {
         let mut cmd = Command::from(self);
-        cmd.output().context("Failed to run command")
+        let output = cmd.output().context("Failed to run command")?;
+
+        if !output.status.success() {
+            println!(
+                "Command {} {} failed: stdout = {}. stderr = {}.",
+                cmd.get_program().to_string_lossy(),
+                cmd.get_args()
+                    .map(|arg| arg.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join(" "),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            )
+        }
+
+        Ok(output)
     }
 }
 
@@ -29,6 +47,25 @@ impl From<IpCommand> for Command {
                 cmd.args(["addr", "add", &cidr_block, "dev", &device])
             }
             IpCommand::Activate { device } => cmd.args(["link", "set", "dev", &device, "up"]),
+            IpCommand::CreateVethPair {
+                veth: device_one,
+                vpeer: device_two,
+            } => cmd.args([
+                "link",
+                "add",
+                &device_two,
+                "type",
+                "veth",
+                "peer",
+                "name",
+                &device_one,
+            ]),
+            IpCommand::MoveDeviceToNamespace { device, namespace } => {
+                cmd.args(["link", "set", &device, "netns", &namespace])
+            }
+            IpCommand::AddDefaultRoute { address } => {
+                cmd.args(["route", "add", "default", "via", &address])
+            }
         };
 
         cmd
@@ -73,6 +110,10 @@ pub enum IpTablesCommand {
         input: String,
         output: String,
     },
+    EnableMasquerade {
+        source_address: Option<String>,
+        output: String,
+    },
 }
 
 impl IpTablesCommand {
@@ -107,9 +148,8 @@ impl From<IpTablesCommand> for Command {
                 input,
                 output,
             } => cmd.args([
-                "-I",
+                "-A",
                 table.as_ref(),
-                "1",
                 "-i",
                 &input,
                 "-o",
@@ -117,6 +157,16 @@ impl From<IpTablesCommand> for Command {
                 "-j",
                 target.as_ref(),
             ]),
+            IpTablesCommand::EnableMasquerade {
+                source_address,
+                output,
+            } => {
+                cmd.args(["-t", "nat", "-A", "POSTROUTING"]);
+                if let Some(source) = source_address {
+                    cmd.args(["--source", &source]);
+                }
+                cmd.args(["-o", &output, "-j", "MASQUERADE"])
+            }
         };
 
         cmd
