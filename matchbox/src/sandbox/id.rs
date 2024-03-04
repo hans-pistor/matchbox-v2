@@ -1,7 +1,5 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-
-
 static VM_ID_COUNTER: AtomicU64 = AtomicU64::new(10);
 
 const ALPHABET: [char; 62] = [
@@ -14,7 +12,7 @@ const ALPHABET: [char; 62] = [
 #[derive(Debug)]
 pub struct VmIdentifier {
     id: String,
-    counter: u64,
+    address_block: u64,
 }
 
 impl VmIdentifier {
@@ -22,15 +20,15 @@ impl VmIdentifier {
         &self.id
     }
 
-    pub fn counter(&self) -> u64 {
-        self.counter
+    pub fn address_block(&self) -> u64 {
+        self.address_block
     }
 }
 
 impl Default for VmIdentifier {
     fn default() -> Self {
         let id = nanoid::nanoid!(9, &ALPHABET);
-        let counter = VM_ID_COUNTER.fetch_add(2, Ordering::Relaxed);
-        Self { counter, id }
+        let address_block = VM_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        Self { address_block, id }
     }
 }

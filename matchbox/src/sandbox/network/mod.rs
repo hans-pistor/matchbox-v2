@@ -24,7 +24,7 @@ impl Network {
         let _ = NetNs::new(id.id())?;
         let network = Self {
             namespace_name: id.id().into(),
-            address_start: id.counter(),
+            address_start: id.address_block(),
         };
         network.setup(interfaces)?;
 
