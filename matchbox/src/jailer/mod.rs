@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Child};
 
-use anyhow::Context;
+
 
 use self::client::FirecrackerClient;
 
@@ -13,14 +13,6 @@ pub struct JailedFirecracker {
     process: Child,
     pub path_resolver: JailedPathResolver,
     pub client: FirecrackerClient,
-}
-
-impl JailedFirecracker {
-    pub fn kill(&mut self) -> anyhow::Result<()> {
-        self.process
-            .kill()
-            .context("failed to kill firecracker process")
-    }
 }
 
 #[derive(Debug)]

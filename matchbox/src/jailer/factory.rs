@@ -1,12 +1,12 @@
 use super::{
     client::FirecrackerClient, config::JailerConfigBuilder, JailedFirecracker, JailedPathResolver,
 };
-use netns_rs::NetNs;
+
 use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use uuid::Uuid;
+
 
 #[derive(Clone, Debug)]
 pub struct JailedFirecrackerFactory {
@@ -32,7 +32,7 @@ impl JailedFirecrackerFactory {
         }
     }
 
-    pub fn spawn_jailed_firecracker(&self, vm_id: Uuid, netns: &Path) -> JailedFirecracker {
+    pub fn spawn_jailed_firecracker(&self, vm_id: &str, netns: &Path) -> JailedFirecracker {
         let jailer_config = JailerConfigBuilder::default()
             .jailer_path(&self.jailer_path)
             .exec_file(&self.firecracker_path)
@@ -47,10 +47,10 @@ impl JailedFirecrackerFactory {
             "new-session",
             "-d",
             "-s",
-            &vm_id.to_string(),
+            &jailer_config.id,
             &jailer_config.jailer_path.to_string_lossy(),
             "--id",
-            &vm_id.to_string(),
+            &jailer_config.id,
             "--exec-file",
             &jailer_config.exec_file.to_string_lossy(),
             "--gid",
