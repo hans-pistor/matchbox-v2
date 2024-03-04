@@ -7,6 +7,9 @@ build-rootfs: build
   fi
   ./rootfs-builder/build-rootfs.sh
 
+run-rootfs: 
+  docker run -it $(docker build -q ./rootfs-builder) sh
+
 build:
   if $IS_RELEASE; then cargo build --release; else cargo build; fi
 
