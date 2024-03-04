@@ -1,10 +1,7 @@
 use anyhow::Context;
 use firecracker_config_rs::models::network_interface::NetworkInterface;
 use netns_rs::NetNs;
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::path::PathBuf;
 
 use self::commands::{IpCommand, IpTablesCommand, Table, Target};
 
@@ -50,13 +47,13 @@ impl Network {
 
     fn veth(&self) -> (String, String) {
         let veth_name = format!("{}-veth", self.namespace_name);
-        let veth_address = format!("10.200.1.{}", self.address_start);
+        let veth_address = format!("10.200.{}.10", self.address_start);
         (veth_name, veth_address)
     }
 
     fn vpeer(&self) -> (String, String) {
         let vpeer_name = format!("{}-vpeer", self.namespace_name);
-        let vpeer_address = format!("10.200.1.{}", self.address_start + 1);
+        let vpeer_address = format!("10.200.{}.11", self.address_start);
         (vpeer_name, vpeer_address)
     }
 

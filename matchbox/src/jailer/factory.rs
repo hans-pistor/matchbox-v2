@@ -1,12 +1,12 @@
 use super::{
     client::FirecrackerClient, config::JailerConfigBuilder, JailedFirecracker, JailedPathResolver,
 };
-use netns_rs::NetNs;
+
 use std::{
     path::{Path, PathBuf},
     process::Command,
 };
-use uuid::Uuid;
+
 
 #[derive(Clone, Debug)]
 pub struct JailedFirecrackerFactory {

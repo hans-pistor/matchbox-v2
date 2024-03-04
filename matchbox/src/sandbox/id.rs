@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use uuid::Uuid;
+
 
 static VM_ID_COUNTER: AtomicU64 = AtomicU64::new(10);
 

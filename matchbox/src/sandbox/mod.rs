@@ -1,15 +1,15 @@
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
+
 use std::time::{Duration, Instant};
 
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
 use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
-use firecracker_config_rs::models::network_interface::{NetworkInterface, NetworkInterfaceBuilder};
+use firecracker_config_rs::models::network_interface::{NetworkInterfaceBuilder};
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
-use uuid::Uuid;
+
 
 use crate::jailer::client::Action;
 use crate::jailer::factory::JailedFirecrackerFactory;

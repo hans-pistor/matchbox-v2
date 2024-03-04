@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process::Child};
 
-use anyhow::Context;
+
 
 use self::client::FirecrackerClient;
 
