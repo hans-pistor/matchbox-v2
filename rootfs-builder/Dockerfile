@@ -6,7 +6,13 @@ WORKDIR /root
 RUN echo "root:root" | chpasswd
 
 # Download dependencies
-RUN apk add --update --no-cache openrc util-linux openssh rng-tools vim
+RUN apk add --update --no-cache \
+    openrc \
+    util-linux \
+    openssh \
+    rng-tools \
+    vim \
+    python3
 
 RUN ssh-keygen -A
 
