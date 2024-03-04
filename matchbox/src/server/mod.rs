@@ -6,6 +6,7 @@ use axum::{
 };
 use tokio::{
     net::{TcpListener, ToSocketAddrs},
+    signal,
     sync::RwLock,
 };
 
@@ -55,7 +56,20 @@ impl Application {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        axum::serve(self.listener, self.router).await?;
+        let shutdown_signal = async {
+            let ctrl_c = async {
+                signal::ctrl_c()
+                    .await
+                    .expect("Failed to install ctrl-c handler")
+            };
+
+            tokio::select! {
+                _ = ctrl_c => {}
+            }
+        };
+        axum::serve(self.listener, self.router)
+            .with_graceful_shutdown(shutdown_signal)
+            .await?;
 
         Ok(())
     }
