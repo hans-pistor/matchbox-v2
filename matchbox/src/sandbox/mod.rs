@@ -2,9 +2,11 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use anyhow::Context;
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
 use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
+use firecracker_config_rs::models::network_interface::{NetworkInterface, NetworkInterfaceBuilder};
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
 use uuid::Uuid;
 
@@ -12,6 +14,10 @@ use crate::jailer::client::Action;
 use crate::jailer::factory::JailedFirecrackerFactory;
 use crate::jailer::{JailedFirecracker, JailedPathResolver};
 use crate::util;
+
+use self::network::Network;
+
+pub mod network;
 
 #[derive(Debug, Clone, Copy)]
 pub enum SandboxState {
@@ -24,6 +30,7 @@ pub enum SandboxState {
 pub struct Sandbox {
     uuid: Uuid,
     state: SandboxState,
+    network: Network,
     pub jailed_firecracker: JailedFirecracker,
     virtual_machine_config: VirtualMachine,
 }
@@ -78,7 +85,6 @@ impl SandboxFactory {
 
     pub async fn spawn_sandbox(&self) -> anyhow::Result<Sandbox> {
         let uuid = Uuid::new_v4();
-        let jailed_firecracker = self.firecracker_factory.spawn_jailed_firecracker(uuid);
         let virtual_machine_config = VirtualMachineBuilder::default()
             .logger(
                 LoggerBuilder::default()
@@ -102,10 +108,22 @@ impl SandboxFactory {
                     .is_read_only(false)
                     .build()?
             ])
+            .network_interfaces(vec![
+                NetworkInterfaceBuilder::default()
+                .host_dev_name("tap0")
+                .iface_id("eth0")
+                .guest_mac("06:00:AC:10:00:02")
+                .build()?
+            ])
             .build()?;
+        let network = Network::new(uuid.to_string(), &virtual_machine_config.network_interfaces)?;
+        let jailed_firecracker = self
+            .firecracker_factory
+            .spawn_jailed_firecracker(uuid, network.netns_path());
 
         let sandbox = Sandbox {
             uuid,
+            network,
             state: SandboxState::Stopped,
             jailed_firecracker,
             virtual_machine_config,

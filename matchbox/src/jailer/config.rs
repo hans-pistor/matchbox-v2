@@ -45,6 +45,9 @@ pub struct JailerConfig {
     /// Base directory of the chrooted process
     pub chroot_base_dir: PathBuf,
 
+    /// Path of the network namespace
+    pub netns: PathBuf,
+
     /// gid jailer will switch to when executed the exec_file process
     #[builder(default)]
     pub gid: JailerGid,

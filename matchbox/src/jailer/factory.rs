@@ -1,7 +1,11 @@
 use super::{
     client::FirecrackerClient, config::JailerConfigBuilder, JailedFirecracker, JailedPathResolver,
 };
-use std::{path::PathBuf, process::Command};
+use netns_rs::NetNs;
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -28,12 +32,13 @@ impl JailedFirecrackerFactory {
         }
     }
 
-    pub fn spawn_jailed_firecracker(&self, vm_id: Uuid) -> JailedFirecracker {
+    pub fn spawn_jailed_firecracker(&self, vm_id: Uuid, netns: &Path) -> JailedFirecracker {
         let jailer_config = JailerConfigBuilder::default()
             .jailer_path(&self.jailer_path)
             .exec_file(&self.firecracker_path)
             .chroot_base_dir(&self.chroot_base_dir)
             .id(vm_id)
+            .netns(netns)
             .build()
             .unwrap();
 
@@ -54,6 +59,8 @@ impl JailedFirecrackerFactory {
             &u32::from(&jailer_config.uid).to_string(),
             "--chroot-base-dir",
             &jailer_config.chroot_base_dir.to_string_lossy(),
+            "--netns",
+            &jailer_config.netns.to_string_lossy(),
         ]);
 
         let process = cmd.spawn().unwrap();
