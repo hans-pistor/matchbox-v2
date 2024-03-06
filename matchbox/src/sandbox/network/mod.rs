@@ -39,8 +39,8 @@ impl Network {
 
     fn setup(&self, interfaces: &[NetworkInterface]) -> anyhow::Result<()> {
         let netns = NetNs::get(&self.namespace_name)?;
-        self.setup_interfaces(&netns, interfaces)?;
         self.setup_veth_devices(&netns)?;
+        self.setup_interfaces(&netns, interfaces)?;
 
         Ok(())
     }
@@ -57,14 +57,19 @@ impl Network {
         (vpeer_name, vpeer_address)
     }
 
+    fn microvm_ip(&self) -> String {
+        format!("10.200.{}.12", self.address_start)
+    }
+
     fn setup_interfaces(
         &self,
         netns: &NetNs,
         interfaces: &[NetworkInterface],
     ) -> anyhow::Result<()> {
+        let (veth_device, _) = self.vpeer();
         netns.run(|_| {
             for interface in interfaces {
-                setup_tap_device(&interface.host_dev_name)?;
+                setup_tap_device(&interface.host_dev_name, veth_device.clone())?;
             }
 
             Ok::<(), anyhow::Error>(())
@@ -84,13 +89,6 @@ impl Network {
         }
         .output()?;
 
-        // Move vpeer into the guest network namespace
-        IpCommand::MoveDeviceToNamespace {
-            device: vpeer_device_name.clone(),
-            namespace: self.namespace_name.clone(),
-        }
-        .output()?;
-
         // Assign veth an IP address & activate it
         IpCommand::AddAddress {
             cidr_block: format!("{host_address}/24"),
@@ -100,6 +98,13 @@ impl Network {
 
         IpCommand::Activate {
             device: veth_device_name.clone(),
+        }
+        .output()?;
+
+        // Move vpeer into the guest network namespace
+        IpCommand::MoveDeviceToNamespace {
+            device: vpeer_device_name.clone(),
+            namespace: self.namespace_name.clone(),
         }
         .output()?;
 
@@ -116,21 +121,51 @@ impl Network {
             }
             .output()?;
 
+            IpCommand::Activate {
+                device: "lo".into(),
+            }
+            .output()?;
+
             // Set the default route as veth (which will go through vpeer)
             IpCommand::AddDefaultRoute {
                 address: host_address.clone(),
             }
             .output()?;
 
-            // Enable masquerading for all traffic leaving via vpeer
             IpTablesCommand::EnableMasquerade {
                 source_address: None,
                 output: vpeer_device_name.clone(),
             }
             .output()?;
 
+            IpTablesCommand::RewriteSource {
+                output: vpeer_device_name.clone(),
+                source: "172.16.0.2".into(),
+                to: self.microvm_ip(),
+            }
+            .output()?;
+
+            IpTablesCommand::RewriteDestination {
+                input: vpeer_device_name.clone(),
+                destination: self.microvm_ip(),
+                to: "172.16.0.2".into(),
+            }
+            .output()?;
+
+            IpCommand::AddRoute {
+                to: self.microvm_ip(),
+                via: peer_address.clone(),
+            }
+            .output()?;
+
             Ok::<(), anyhow::Error>(())
         })??;
+
+        IpTablesCommand::EnableMasquerade {
+            source_address: Some(format!("{}/24", peer_address.clone())),
+            output: HOST_INTERFACE_NAME.into(),
+        }
+        .output()?;
 
         IpTablesCommand::AddRule {
             table: Table::Forward,
@@ -144,14 +179,6 @@ impl Network {
             target: Target::Accept,
             input: HOST_INTERFACE_NAME.into(),
             output: veth_device_name.clone(),
-        }
-        .output()?;
-
-        // Enable masquerading for all traffic coming from the peer address leaving
-        // via the host interface (ens4 in my case)
-        IpTablesCommand::EnableMasquerade {
-            source_address: Some(format!("{peer_address}/24")),
-            output: HOST_INTERFACE_NAME.into(),
         }
         .output()?;
 
@@ -170,10 +197,38 @@ impl Drop for Network {
         }
         .output()
         .unwrap();
+
+        let (veth_name, _) = self.veth();
+        let (_, peer_address) = self.vpeer();
+
+        IpTablesCommand::DeleteRule {
+            table: Table::Forward,
+            target: Target::Accept,
+            input: veth_name.clone(),
+            output: HOST_INTERFACE_NAME.into(),
+        }
+        .output()
+        .unwrap();
+
+        IpTablesCommand::DeleteRule {
+            table: Table::Forward,
+            target: Target::Accept,
+            output: veth_name,
+            input: HOST_INTERFACE_NAME.into(),
+        }
+        .output()
+        .unwrap();
+
+        IpTablesCommand::DisableMasquerade {
+            source_address: Some(format!("{peer_address}/24")),
+            output: HOST_INTERFACE_NAME.into(),
+        }
+        .output()
+        .unwrap();
     }
 }
 
-fn setup_tap_device(device: &str) -> anyhow::Result<()> {
+fn setup_tap_device(device: &str, veth_device: String) -> anyhow::Result<()> {
     IpCommand::CreateTapDevice {
         device: device.to_string(),
     }
@@ -194,7 +249,7 @@ fn setup_tap_device(device: &str) -> anyhow::Result<()> {
         table: Table::Forward,
         target: Target::Accept,
         input: device.to_string(),
-        output: HOST_INTERFACE_NAME.into(),
+        output: veth_device,
     }
     .output()?;
     Ok(())

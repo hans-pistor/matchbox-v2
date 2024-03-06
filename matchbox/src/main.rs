@@ -1,13 +1,8 @@
-use jailer::factory::JailedFirecrackerFactory;
-use sandbox::SandboxFactory;
-use server::{Application, ApplicationState};
+use matchbox::jailer::factory::JailedFirecrackerFactory;
+use matchbox::sandbox::SandboxFactory;
+use matchbox::server::{Application, ApplicationState};
 
-use crate::sandbox::SandboxInitializer;
-
-pub mod jailer;
-pub mod sandbox;
-pub mod server;
-pub mod util;
+use matchbox::sandbox::SandboxInitializer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
