@@ -11,6 +11,7 @@ pub enum IpCommand {
     CreateVethPair { veth: String, vpeer: String },
     MoveDeviceToNamespace { device: String, namespace: String },
     AddDefaultRoute { address: String },
+    AddRoute { to: String, via: String },
 }
 
 impl IpCommand {
@@ -66,6 +67,7 @@ impl From<IpCommand> for Command {
             IpCommand::AddDefaultRoute { address } => {
                 cmd.args(["route", "add", "default", "via", &address])
             }
+            IpCommand::AddRoute { to, via } => cmd.args(["route", "add", &to, "via", &via]),
         };
 
         cmd
@@ -117,6 +119,16 @@ pub enum IpTablesCommand {
     DisableMasquerade {
         source_address: Option<String>,
         output: String,
+    },
+    RewriteSource {
+        output: String,
+        source: String,
+        to: String,
+    },
+    RewriteDestination {
+        input: String,
+        destination: String,
+        to: String,
     },
 }
 
@@ -181,6 +193,38 @@ impl From<IpTablesCommand> for Command {
                 }
                 cmd.args(["-o", &output, "-j", "MASQUERADE"])
             }
+            IpTablesCommand::RewriteSource { output, source, to } => cmd.args([
+                "-t",
+                "-nat",
+                "-A",
+                "POSTROUTING",
+                "-o",
+                &output,
+                "-s",
+                &source,
+                "-j",
+                "SNAT",
+                "--to",
+                &to,
+            ]),
+            IpTablesCommand::RewriteDestination {
+                input,
+                destination,
+                to,
+            } => cmd.args([
+                "-t",
+                "nat",
+                "-A",
+                "PREROUTING",
+                "-i",
+                &input,
+                "-d",
+                &destination,
+                "-j",
+                "DNAT",
+                "--to",
+                &to,
+            ]),
         };
 
         cmd

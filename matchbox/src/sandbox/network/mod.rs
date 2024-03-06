@@ -57,6 +57,10 @@ impl Network {
         (vpeer_name, vpeer_address)
     }
 
+    fn microvm_ip(&self) -> String {
+        format!("10.200.{}.12", self.address_start)
+    }
+
     fn setup_interfaces(
         &self,
         netns: &NetNs,
@@ -131,6 +135,26 @@ impl Network {
             IpTablesCommand::EnableMasquerade {
                 source_address: None,
                 output: vpeer_device_name.clone(),
+            }
+            .output()?;
+
+            IpTablesCommand::RewriteSource {
+                output: vpeer_device_name.clone(),
+                source: "172.16.0.2".into(),
+                to: self.microvm_ip(),
+            }
+            .output()?;
+
+            IpTablesCommand::RewriteDestination {
+                input: vpeer_device_name.clone(),
+                destination: self.microvm_ip(),
+                to: "172.16.0.2".into(),
+            }
+            .output()?;
+
+            IpCommand::AddRoute {
+                to: self.microvm_ip(),
+                via: peer_address.clone(),
             }
             .output()?;
 
