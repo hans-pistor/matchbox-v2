@@ -114,6 +114,10 @@ pub enum IpTablesCommand {
         source_address: Option<String>,
         output: String,
     },
+    DisableMasquerade {
+        source_address: Option<String>,
+        output: String,
+    },
 }
 
 impl IpTablesCommand {
@@ -162,6 +166,16 @@ impl From<IpTablesCommand> for Command {
                 output,
             } => {
                 cmd.args(["-t", "nat", "-A", "POSTROUTING"]);
+                if let Some(source) = source_address {
+                    cmd.args(["--source", &source]);
+                }
+                cmd.args(["-o", &output, "-j", "MASQUERADE"])
+            }
+            IpTablesCommand::DisableMasquerade {
+                source_address,
+                output,
+            } => {
+                cmd.args(["-t", "nat", "-D", "POSTROUTING"]);
                 if let Some(source) = source_address {
                     cmd.args(["--source", &source]);
                 }
