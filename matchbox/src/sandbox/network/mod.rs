@@ -152,14 +152,14 @@ impl Network {
             }
             .output()?;
 
-            IpCommand::AddRoute {
-                to: self.microvm_ip(),
-                via: peer_address.clone(),
-            }
-            .output()?;
-
             Ok::<(), anyhow::Error>(())
         })??;
+
+        IpCommand::AddRoute {
+            to: self.microvm_ip(),
+            via: peer_address.clone(),
+        }
+        .output()?;
 
         IpTablesCommand::EnableMasquerade {
             source_address: Some(format!("{}/24", peer_address.clone())),

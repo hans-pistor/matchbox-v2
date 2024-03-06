@@ -16,23 +16,8 @@ pub enum IpCommand {
 
 impl IpCommand {
     pub fn output(self) -> anyhow::Result<Output> {
-        let mut cmd = Command::from(self);
-        let output = cmd.output().context("Failed to run command")?;
-
-        if !output.status.success() {
-            println!(
-                "Command {} {} failed: stdout = {}. stderr = {}.",
-                cmd.get_program().to_string_lossy(),
-                cmd.get_args()
-                    .map(|arg| arg.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join(" "),
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
-            )
-        }
-
-        Ok(output)
+        let cmd = Command::from(self);
+        run_command(cmd)
     }
 }
 
@@ -134,8 +119,8 @@ pub enum IpTablesCommand {
 
 impl IpTablesCommand {
     pub fn output(self) -> anyhow::Result<Output> {
-        let mut cmd = Command::from(self);
-        cmd.output().context("Failed to run command")
+        let cmd = Command::from(self);
+        run_command(cmd)
     }
 }
 
@@ -195,7 +180,7 @@ impl From<IpTablesCommand> for Command {
             }
             IpTablesCommand::RewriteSource { output, source, to } => cmd.args([
                 "-t",
-                "-nat",
+                "nat",
                 "-A",
                 "POSTROUTING",
                 "-o",
@@ -229,4 +214,23 @@ impl From<IpTablesCommand> for Command {
 
         cmd
     }
+}
+
+fn run_command(mut cmd: Command) -> anyhow::Result<Output> {
+    let output = cmd.output().context("Failed to run command")?;
+
+    if !output.status.success() {
+        println!(
+            "Command {} {} failed: stdout = {}. stderr = {}.",
+            cmd.get_program().to_string_lossy(),
+            cmd.get_args()
+                .map(|arg| arg.to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(" "),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        )
+    }
+
+    Ok(output)
 }
