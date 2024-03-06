@@ -7,9 +7,8 @@ use std::time::{Duration, Instant};
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
 use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
-use firecracker_config_rs::models::network_interface::{NetworkInterfaceBuilder};
+use firecracker_config_rs::models::network_interface::NetworkInterfaceBuilder;
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
-
 
 use crate::jailer::client::Action;
 use crate::jailer::factory::JailedFirecrackerFactory;
