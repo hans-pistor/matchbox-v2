@@ -46,3 +46,17 @@ iptables -t nat -A POSTROUTING -s 10.200.1.2/24 -o ens4 -j MASQUERADE
 iptables -A FORWARD -i ens4 -o veth -j ACCEPT
 iptables -A FORWARD -o ens4 -i veth -j ACCEPT
 ```
+
+
+8. Giving an IP address inside a network namespace an address outside the
+   network namespave
+
+```bash
+# For packets that are leaving the namespace (via the peer) coming from our hard coded IP addressof 172.16.0.2, rewrite that IP address to 10.200.10.12.
+sudo ip netns exec yYKkWVB1K iptables -t nat -A POSTROUTING -o yYKkWVB1K-vpeer -s 172.16.0
+.2 -j SNAT --to 10.200.10.12
+# For packets coming into that namespace (via vpeer) going to our new IP address 10.200.10.12, rewrite that back to the original hard coded address.
+sudo ip netns exec yYKkWVB1K iptables -t nat -A PREROUTING -i yYKkWVB1K-vpeer -j DNAT --to
+ 172.16.0.2
+```
+
