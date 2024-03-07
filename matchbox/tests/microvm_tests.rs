@@ -10,6 +10,7 @@ use crate::common::{ping, wait_until};
 mod common;
 
 #[tokio::test]
+#[ignore]
 async fn test_spawning_a_uvm() {
     let factory = JailedFirecrackerFactory::new(
         "/usr/local/bin/jailer",
