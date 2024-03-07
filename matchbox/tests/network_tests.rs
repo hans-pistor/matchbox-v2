@@ -1,4 +1,4 @@
-use std::{process::Command, time::Duration};
+use std::process::Command;
 
 use matchbox::sandbox::{id::VmIdentifier, network::Network};
 use netns_rs::NetNs;

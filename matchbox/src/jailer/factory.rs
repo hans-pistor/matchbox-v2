@@ -7,7 +7,6 @@ use std::{
     process::Command,
 };
 
-
 #[derive(Clone, Debug)]
 pub struct JailedFirecrackerFactory {
     jailer_path: PathBuf,

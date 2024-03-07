@@ -1,7 +1,5 @@
 use std::{path::PathBuf, process::Child};
 
-
-
 use self::client::FirecrackerClient;
 
 pub mod client;
