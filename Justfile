@@ -19,3 +19,9 @@ run: host-networking-setup build
 host-networking-setup:
   # Enable ipv4 forwarding
   sudo sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+  
+test-all: 
+  cargo t -- --ignored --nocapture
+  
+test PACKAGE:
+  cargo t -p {{PACKAGE}} -- --ignored --nocapture
