@@ -6,7 +6,7 @@ use crate::common::ping;
 mod common;
 
 #[test]
-/// This test will fail on ci probably because its working with networking.
+#[ignore]
 fn test_namespaced_network_communication_works() -> anyhow::Result<()> {
     let id = VmIdentifier::default();
     println!("Creating network with id {id:?}");
