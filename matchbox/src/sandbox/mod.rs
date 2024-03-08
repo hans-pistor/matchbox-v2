@@ -42,6 +42,10 @@ impl Sandbox {
         self.id.id()
     }
 
+    pub fn network(&self) -> &Network {
+        &self.network
+    }
+
     pub fn path_resolver(&self) -> &JailedPathResolver {
         &self.jailed_firecracker.path_resolver
     }
@@ -121,7 +125,7 @@ impl SandboxFactory {
         let network = Network::new(&id, &virtual_machine_config.network_interfaces)?;
         let jailed_firecracker = self
             .firecracker_factory
-            .spawn_jailed_firecracker(&id.id(), &network.netns_path()?);
+            .spawn_jailed_firecracker(id.id(), &network.netns_path()?);
 
         let sandbox = Sandbox {
             id,

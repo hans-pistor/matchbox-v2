@@ -45,19 +45,19 @@ impl Network {
         Ok(())
     }
 
-    fn veth(&self) -> (String, String) {
+    pub fn veth(&self) -> (String, String) {
         let veth_name = format!("{}-veth", self.namespace_name);
         let veth_address = format!("10.200.{}.10", self.address_start);
         (veth_name, veth_address)
     }
 
-    fn vpeer(&self) -> (String, String) {
+    pub fn vpeer(&self) -> (String, String) {
         let vpeer_name = format!("{}-vpeer", self.namespace_name);
         let vpeer_address = format!("10.200.{}.11", self.address_start);
         (vpeer_name, vpeer_address)
     }
 
-    fn microvm_ip(&self) -> String {
+    pub fn microvm_ip(&self) -> String {
         format!("10.200.{}.12", self.address_start)
     }
 
@@ -152,14 +152,14 @@ impl Network {
             }
             .output()?;
 
-            IpCommand::AddRoute {
-                to: self.microvm_ip(),
-                via: peer_address.clone(),
-            }
-            .output()?;
-
             Ok::<(), anyhow::Error>(())
         })??;
+
+        IpCommand::AddRoute {
+            to: self.microvm_ip(),
+            via: peer_address.clone(),
+        }
+        .output()?;
 
         IpTablesCommand::EnableMasquerade {
             source_address: Some(format!("{}/24", peer_address.clone())),

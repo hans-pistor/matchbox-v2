@@ -1,6 +1,5 @@
-use std::sync::atomic::{AtomicU64, Ordering};
+use rand::Rng;
 
-static VM_ID_COUNTER: AtomicU64 = AtomicU64::new(10);
 
 const ALPHABET: [char; 62] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
@@ -28,7 +27,8 @@ impl VmIdentifier {
 impl Default for VmIdentifier {
     fn default() -> Self {
         let id = nanoid::nanoid!(9, &ALPHABET);
-        let address_block = VM_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let address_block: u8 = rand::thread_rng().gen();
+        let address_block = address_block.into();
         Self { address_block, id }
     }
 }
