@@ -23,18 +23,5 @@ jobs:
     - name: Build
       run: cargo build --verbose
       
-    - name: Download firecracker binary
-      uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
-      with:
-        url: https://s3.amazonaws.com/spec.ccfc.min/firecracker-ci/v1.8/x86_64/vmlinux-5.10.209
-        target: /tmp
-      
-    - name: Download ubuntu rootfs binary
-      uses: suisei-cn/actions-download-file@818d6b7dc8fe73f2f924b6241f2b1134ca1377d9
-      with:
-        url: https://s3.amazonaws.com/spec.ccfc.min/firecracker-ci/v1.8/x86_64/ubuntu-22.04.ext4
-        target: /tmp
-
-      
     - name: Run tests
       run: cargo test --verbose
