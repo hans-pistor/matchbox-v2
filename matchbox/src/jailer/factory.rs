@@ -3,9 +3,20 @@ use super::{
 };
 
 use std::{
+    fmt::Debug,
     path::{Path, PathBuf},
     process::Command,
 };
+
+pub trait ProvideFirecracker: Debug + Send + Sync {
+    fn provide_firecracker(&self, id: &str, netns: &Path) -> FirecrackerProcess;
+}
+
+impl ProvideFirecracker for JailedFirecrackerFactory {
+    fn provide_firecracker(&self, id: &str, netns: &Path) -> FirecrackerProcess {
+        self.spawn_jailed_firecracker(id, netns)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct JailedFirecrackerFactory {

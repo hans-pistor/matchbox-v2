@@ -7,7 +7,7 @@ pub trait ProvideSparkClient: Debug + Send + Sync {
     async fn provide_spark_client(&self, address: &str) -> anyhow::Result<SparkClient>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SparkClientFactory;
 
 #[async_trait::async_trait]
