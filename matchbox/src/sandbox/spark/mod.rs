@@ -2,7 +2,12 @@ use anyhow::Context;
 use sparklib::grpc::{
     guest_agent_client::GuestAgentClient, HealthCheckRequest, HealthCheckResponse,
 };
-use tonic::{transport::Channel, Request};
+use tonic::{
+    transport::{Channel, Endpoint},
+    Request,
+};
+
+pub mod factory;
 
 #[derive(Debug, Clone)]
 pub struct SparkClient {
@@ -10,9 +15,10 @@ pub struct SparkClient {
 }
 
 impl SparkClient {
-    pub async fn connect(ip: String) -> anyhow::Result<SparkClient> {
+    pub async fn initialize(ip: &str) -> anyhow::Result<SparkClient> {
         let address = format!("http://{ip}:5001");
-        let client = GuestAgentClient::connect(address).await?;
+        let channel = Endpoint::new(address)?.connect_lazy();
+        let client = GuestAgentClient::new(channel);
         Ok(SparkClient { client })
     }
 

@@ -1,5 +1,6 @@
 use matchbox::jailer::factory::JailedFirecrackerFactory;
 use matchbox::sandbox::id::VmIdentifierFactory;
+use matchbox::sandbox::spark::factory::SparkClientFactory;
 use matchbox::sandbox::SandboxFactory;
 use matchbox::server::{Application, ApplicationState};
 
@@ -15,6 +16,7 @@ async fn main() -> anyhow::Result<()> {
     let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
     let sandbox_factory = Box::new(SandboxFactory::new(
         Box::new(VmIdentifierFactory),
+        Box::new(SparkClientFactory),
         factory,
         sandbox_initializer,
     ));

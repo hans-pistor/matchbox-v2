@@ -19,6 +19,7 @@ use crate::util;
 
 use self::id::{ProvideIdentifier, VmIdentifier};
 use self::network::Network;
+use self::spark::factory::ProvideSparkClient;
 use self::spark::SparkClient;
 
 pub mod id;
@@ -39,7 +40,7 @@ pub struct Sandbox {
     network: Network,
     pub jailed_firecracker: JailedFirecracker,
     virtual_machine_config: VirtualMachine,
-    client: Option<SparkClient>,
+    client: SparkClient,
 }
 
 impl Sandbox {
@@ -55,12 +56,8 @@ impl Sandbox {
         &self.jailed_firecracker.path_resolver
     }
 
-    pub async fn client(&mut self) -> anyhow::Result<&mut SparkClient> {
-        let client = self
-            .client
-            .get_or_insert(SparkClient::connect(self.network.microvm_ip()).await?);
-
-        Ok(client)
+    pub async fn client(&mut self) -> &mut SparkClient {
+        &mut self.client
     }
 
     pub async fn start(&mut self) -> anyhow::Result<()> {
@@ -100,6 +97,7 @@ impl ProvideSandbox for SandboxFactory {
 #[derive(Debug)]
 pub struct SandboxFactory {
     identifier_factory: Box<dyn ProvideIdentifier>,
+    spark_factory: Box<dyn ProvideSparkClient>,
     firecracker_factory: JailedFirecrackerFactory,
     sandbox_initializer: SandboxInitializer,
 }
@@ -107,11 +105,13 @@ pub struct SandboxFactory {
 impl SandboxFactory {
     pub fn new(
         identifier_factory: Box<dyn ProvideIdentifier>,
+        spark_factory: Box<dyn ProvideSparkClient>,
         firecracker_factory: JailedFirecrackerFactory,
         sandbox_initializer: SandboxInitializer,
     ) -> SandboxFactory {
         SandboxFactory {
             identifier_factory,
+            spark_factory,
             firecracker_factory,
             sandbox_initializer,
         }
@@ -157,11 +157,14 @@ impl SandboxFactory {
 
         let sandbox = Sandbox {
             id,
-            network,
             state: SandboxState::Stopped,
             jailed_firecracker,
             virtual_machine_config,
-            client: None,
+            client: self
+                .spark_factory
+                .provide_spark_client(&network.microvm_ip())
+                .await?,
+            network,
         };
 
         let sandbox = self.sandbox_initializer.initialize(sandbox).await?;
@@ -293,7 +296,7 @@ impl SandboxInitializer {
     }
 
     async fn wait_for_spark_health_check(&self, mut sandbox: Sandbox) -> anyhow::Result<Sandbox> {
-        let client = sandbox.client().await?;
+        let client = sandbox.client().await;
         let start = Instant::now();
         while start.elapsed() < Duration::from_secs(10) {
             if client.health_check().await.is_ok() {
