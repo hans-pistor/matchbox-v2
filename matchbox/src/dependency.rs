@@ -80,10 +80,9 @@ impl Default for DependencyFactory {
             "/tmp/rootfs.ext4",
             "/tmp/kernel.bin",
         ));
-        let identifier_provider: Box<dyn ProvideIdentifier> =
-            Box::new(VmIdentifierFactory::default());
+        let identifier_provider: Box<dyn ProvideIdentifier> = Box::<VmIdentifierFactory>::default();
         let spark_client_provider: Box<dyn ProvideSparkClient> =
-            Box::new(SparkClientFactory::default());
+            Box::<SparkClientFactory>::default();
         Self {
             firecracker_provider: Arc::from(firecracker_provider),
             sandbox_initialixer: Arc::from(sandbox_initializer),

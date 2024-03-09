@@ -34,6 +34,7 @@ impl ApplicationState {
         &self.0.sandboxes
     }
 
+    #[allow(clippy::borrowed_box)]
     pub fn sandbox_factory(&self) -> &Box<dyn ProvideSandbox + Send + Sync> {
         &self.0.sandbox_factory
     }

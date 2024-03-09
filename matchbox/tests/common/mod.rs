@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{
     process::Command,
     time::{Duration, Instant},
