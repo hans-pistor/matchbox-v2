@@ -27,3 +27,6 @@ test-all:
 test PACKAGE:
   cargo t -p {{PACKAGE}} -- --nocapture
   cargo t -p {{PACKAGE}} -- --ignored --nocapture
+
+create-sandbox:
+  curl --header "Content-Type: application/json" --request POST --data '{"code_drive_path": {"type": "Local", "path": "/tmp/code-drive.img"}}' http://localhost:3000/sandbox

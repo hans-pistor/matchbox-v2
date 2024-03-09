@@ -81,6 +81,10 @@ impl JailedFirecrackerFactory {
             .join("root");
         let resolver = PathResolver { root_directory };
 
+        std::fs::create_dir_all(resolver.resolve("/drives/")).unwrap();
+        std::fs::create_dir_all(resolver.resolve("/log/")).unwrap();
+        std::fs::create_dir_all(resolver.resolve("/run/")).unwrap();
+
         let firecracker_socket = resolver.resolve("/run/firecracker.socket");
         let client = FirecrackerClient::new(firecracker_socket);
 
