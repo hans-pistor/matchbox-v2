@@ -8,11 +8,8 @@ use std::{
 
 use matchbox::{
     dependency::DependencyFactory,
-    jailer::factory::JailedFirecrackerFactory,
     sandbox::{
-        id::{ProvideIdentifier, VmIdentifier, VmIdentifierFactory},
-        spark::factory::SparkClientFactory,
-        SandboxFactory, SandboxInitializer,
+        id::{ProvideIdentifier, VmIdentifier},
     },
 };
 

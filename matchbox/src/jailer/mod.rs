@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process::Child};
+use std::{path::PathBuf};
 
 use self::client::FirecrackerClient;
 
