@@ -25,4 +25,5 @@ test-all:
   cargo t -- --ignored --nocapture
   
 test PACKAGE:
+  cargo t -p {{PACKAGE}} -- --nocapture
   cargo t -p {{PACKAGE}} -- --ignored --nocapture
