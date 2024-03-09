@@ -34,6 +34,12 @@ pub struct VmIdentifier {
 }
 
 impl VmIdentifier {
+    pub fn new(id: String, address_block: u64) -> VmIdentifier {
+        Self {
+            id,
+            address_block: AddressBlock::from(address_block),
+        }
+    }
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -47,8 +53,7 @@ impl Default for VmIdentifier {
     fn default() -> Self {
         let id = nanoid::nanoid!(9, &ALPHABET);
         let address_block = rand::thread_rng().gen_range(0..=MAX_NETWORK_START_BLOCK);
-        let address_block = AddressBlock::from(address_block);
-        Self { address_block, id }
+        Self::new(id, address_block)
     }
 }
 
@@ -65,7 +70,7 @@ pub struct AddressBlock {
 impl From<u64> for AddressBlock {
     fn from(value: u64) -> Self {
         let block3 = value / GROUPS_IN_LAST_BLOCK;
-        let block4 = (value % GROUPS_IN_LAST_BLOCK) * 4;
+        let block4 = (value % GROUPS_IN_LAST_BLOCK) * 4 + 1;
 
         Self {
             base_address: format!("10.200.{block3}"),
