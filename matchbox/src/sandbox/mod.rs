@@ -14,7 +14,7 @@ use firecracker_config_rs::models::network_interface::NetworkInterfaceBuilder;
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
 
 use crate::jailer::client::Action;
-use crate::jailer::factory::{ProvideFirecracker};
+use crate::jailer::factory::ProvideFirecracker;
 use crate::jailer::{FirecrackerProcess, PathResolver};
 use crate::util;
 
@@ -211,7 +211,7 @@ impl SandboxInitializer {
 
         sandbox.start().await?;
 
-        self.wait_for_spark_health_check(sandbox).await?;
+        // self.wait_for_spark_health_check(sandbox).await?;
         Ok(())
     }
 

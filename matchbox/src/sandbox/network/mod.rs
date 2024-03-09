@@ -109,7 +109,7 @@ impl Network {
 
         // Assign veth an IP address & activate it
         IpCommand::AddAddress {
-            cidr_block: format!("{host_address}/24"),
+            cidr_block: format!("{host_address}/29"),
             device: veth_device_name.clone(),
         }
         .output()?;
@@ -129,7 +129,7 @@ impl Network {
         netns.run(|_| {
             // Assign vpeer an ip address and activate it
             IpCommand::AddAddress {
-                cidr_block: format!("{peer_address}/24"),
+                cidr_block: format!("{peer_address}/29"),
                 device: vpeer_device_name.clone(),
             }
             .output()?;
@@ -180,7 +180,7 @@ impl Network {
         .output()?;
 
         IpTablesCommand::EnableMasquerade {
-            source_address: Some(format!("{}/24", peer_address.clone())),
+            source_address: Some(format!("{}/29", peer_address.clone())),
             output: HOST_INTERFACE_NAME.into(),
         }
         .output()?;
@@ -238,7 +238,7 @@ impl Drop for Network {
         .unwrap();
 
         IpTablesCommand::DisableMasquerade {
-            source_address: Some(format!("{peer_address}/24")),
+            source_address: Some(format!("{peer_address}/29")),
             output: HOST_INTERFACE_NAME.into(),
         }
         .output()
