@@ -1,22 +1,24 @@
 use std::fmt::Debug;
 use std::fs::OpenOptions;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use derive_builder::Builder;
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
 use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
 use firecracker_config_rs::models::network_interface::NetworkInterfaceBuilder;
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
+use serde::{Deserialize, Serialize};
 
 use crate::jailer::client::Action;
 use crate::jailer::factory::ProvideFirecracker;
 use crate::jailer::{FirecrackerProcess, PathResolver};
-use crate::util;
+use crate::util::{self, copy};
 
 use self::id::{ProvideIdentifier, VmIdentifier};
 use self::network::Network;
@@ -83,15 +85,47 @@ impl Drop for Sandbox {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
+pub enum Location {
+    Local { path: String },
+    CloudStorage { path: String },
+}
+
+impl Location {
+    pub fn to_local_path(&self) -> anyhow::Result<PathBuf> {
+        match self {
+            Location::Local { path } => {
+                let path = PathBuf::from(path);
+                if !path.exists() {
+                    anyhow::bail!("path {} doesn't exist", path.display());
+                }
+
+                Ok(path)
+            }
+            Location::CloudStorage { path } => {
+                unimplemented!("Google cloud storage not yet implemented")
+            }
+        }
+    }
+}
+
+#[derive(Builder, Debug, Default)]
+#[builder(setter(into))]
+pub struct ProvideSandboxOptions {
+    #[builder(setter(strip_option), default)]
+    code_drive_location: Option<Location>,
+}
+
 #[async_trait::async_trait]
 pub trait ProvideSandbox {
-    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox>;
+    async fn provide_sandbox(&self, options: ProvideSandboxOptions) -> anyhow::Result<Sandbox>;
 }
 
 #[async_trait::async_trait]
 impl ProvideSandbox for SandboxFactory {
-    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox> {
-        self.spawn_sandbox().await
+    async fn provide_sandbox(&self, options: ProvideSandboxOptions) -> anyhow::Result<Sandbox> {
+        self.spawn_sandbox(options).await
     }
 }
 
@@ -101,6 +135,7 @@ pub struct SandboxFactory {
     spark_factory: Arc<Box<dyn ProvideSparkClient>>,
     firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
     sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
+    dummy_drive_path: PathBuf,
 }
 
 impl SandboxFactory {
@@ -109,18 +144,20 @@ impl SandboxFactory {
         spark_factory: Arc<Box<dyn ProvideSparkClient>>,
         firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
         sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
+        dummy_drive_path: PathBuf,
     ) -> SandboxFactory {
         SandboxFactory {
             identifier_factory,
             spark_factory,
             firecracker_factory,
             sandbox_initializer,
+            dummy_drive_path,
         }
     }
 
-    pub async fn spawn_sandbox(&self) -> anyhow::Result<Sandbox> {
+    pub async fn spawn_sandbox(&self, options: ProvideSandboxOptions) -> anyhow::Result<Sandbox> {
         let id = self.identifier_factory.provide_identifier();
-        let virtual_machine_config = VirtualMachineBuilder::default()
+        let mut virtual_machine_config = VirtualMachineBuilder::default()
             .logger(
                 LoggerBuilder::default()
                     .log_path("/log/firecracker.log")
@@ -168,11 +205,32 @@ impl SandboxFactory {
             network,
         };
 
+        copy_if_exists(
+            &options.code_drive_location,
+            sandbox.path_resolver().resolve("/drives/code-drive.ext4"),
+            &self.dummy_drive_path,
+        )?;
+        sandbox.virtual_machine_config.drives.push(
+            DriveBuilder::default()
+                .drive_id("code_drive")
+                .path_on_host("/drives/code-drive.ext4")
+                .is_root_device(false)
+                .is_read_only(false)
+                .build()?,
+        );
+
         self.sandbox_initializer
             .initialize_sandbox(&mut sandbox)
             .await?;
 
         Ok(sandbox)
+    }
+}
+
+fn copy_if_exists(file: &Option<Location>, path: PathBuf, dummy_path: &Path) -> anyhow::Result<()> {
+    match file {
+        Some(file) => copy(file.to_local_path()?, path),
+        None => copy(dummy_path, path),
     }
 }
 
@@ -211,7 +269,7 @@ impl SandboxInitializer {
 
         sandbox.start().await?;
 
-        // self.wait_for_spark_health_check(sandbox).await?;
+        self.wait_for_spark_health_check(sandbox).await?;
         Ok(())
     }
 
@@ -244,9 +302,6 @@ impl SandboxInitializer {
 
         let log_file_path_on_host = sandbox.path_resolver().resolve(&logger.log_path);
 
-        // Create the parent direct of the log fileo
-        std::fs::create_dir_all(log_file_path_on_host.parent().unwrap())?;
-
         // Touch the logfile
         OpenOptions::new()
             .create(true)
@@ -272,7 +327,7 @@ impl SandboxInitializer {
         std::fs::create_dir_all(kernel_image_path_on_host.parent().unwrap())?;
 
         // Copy the global bootsource into the VM directory
-        util::copy(&self.kernel_image, kernel_image_path_on_host);
+        util::copy(&self.kernel_image, kernel_image_path_on_host)?;
 
         sandbox
             .jailed_firecracker
@@ -285,11 +340,11 @@ impl SandboxInitializer {
 
     async fn setup_drives(&self, sandbox: &Sandbox) -> anyhow::Result<()> {
         let rootfs_path = sandbox.path_resolver().resolve("/drives/rootfs.ext4");
-        std::fs::create_dir_all(rootfs_path.parent().unwrap())?;
-        util::copy(&self.rootfs, rootfs_path);
+        util::copy(&self.rootfs, rootfs_path)?;
 
         for drive in &sandbox.virtual_machine_config.drives {
             let path = format!("/drives/{}", drive.drive_id);
+
             sandbox.jailed_firecracker.client.put(path, &drive).await?;
         }
 

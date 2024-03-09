@@ -8,7 +8,10 @@ use std::{
 
 use matchbox::{
     dependency::DependencyFactory,
-    sandbox::id::{ProvideIdentifier, VmIdentifier},
+    sandbox::{
+        id::{ProvideIdentifier, VmIdentifier},
+        ProvideSandboxOptions,
+    },
 };
 
 use crate::common::{ping, wait_until};
@@ -22,7 +25,7 @@ async fn test_spawning_a_uvm() {
     let factory = dependency_factory.sandbox_provider();
 
     let sandbox = factory
-        .provide_sandbox()
+        .provide_sandbox(ProvideSandboxOptions::default())
         .await
         .expect("failed to create sandbox");
 
@@ -49,7 +52,7 @@ async fn test_spawning_next_door_vms() {
     let factory = dependency_factory.sandbox_provider();
 
     let sandbox = factory
-        .provide_sandbox()
+        .provide_sandbox(ProvideSandboxOptions::default())
         .await
         .expect("failed to create sandbox");
 
@@ -58,7 +61,7 @@ async fn test_spawning_next_door_vms() {
     wait_until(Duration::from_secs(10), || ping(&uvm_ip)).expect("failed to ping microvm");
 
     let other = factory
-        .provide_sandbox()
+        .provide_sandbox(ProvideSandboxOptions::default())
         .await
         .expect("failed to create sandbox");
 
