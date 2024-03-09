@@ -1,14 +1,15 @@
 use std::{
-    sync::atomic::{AtomicU64, Ordering},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     time::Duration,
 };
 
 use matchbox::{
-    jailer::factory::JailedFirecrackerFactory,
+    dependency::DependencyFactory,
     sandbox::{
-        id::{ProvideIdentifier, VmIdentifier, VmIdentifierFactory},
-        spark::factory::SparkClientFactory,
-        SandboxFactory, SandboxInitializer,
+        id::{ProvideIdentifier, VmIdentifier},
     },
 };
 
@@ -19,21 +20,11 @@ mod common;
 #[tokio::test]
 #[ignore]
 async fn test_spawning_a_uvm() {
-    let factory = JailedFirecrackerFactory::new(
-        "/usr/local/bin/jailer",
-        "/usr/local/bin/firecracker",
-        "/tmp/vms",
-    );
-    let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
-    let factory = Box::new(SandboxFactory::new(
-        Box::new(VmIdentifierFactory),
-        Box::new(SparkClientFactory),
-        factory,
-        sandbox_initializer,
-    ));
+    let dependency_factory = DependencyFactory::default();
+    let factory = dependency_factory.sandbox_provider();
 
     let mut sandbox = factory
-        .spawn_sandbox()
+        .provide_sandbox()
         .await
         .expect("failed to create sandbox");
     sandbox.start().await.expect("failed to start sandbox");
@@ -55,22 +46,13 @@ async fn test_spawning_next_door_vms() {
             VmIdentifier::new(id.to_string(), id)
         }
     }
-    let factory = JailedFirecrackerFactory::new(
-        "/usr/local/bin/jailer",
-        "/usr/local/bin/firecracker",
-        "/tmp/vms",
-    );
-    let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
+    let dependency_factory = DependencyFactory::default()
+        .with_identifier_provider(Arc::new(Box::new(MockIdentifierFactory {})));
 
-    let factory = Box::new(SandboxFactory::new(
-        Box::new(MockIdentifierFactory),
-        Box::new(SparkClientFactory),
-        factory,
-        sandbox_initializer,
-    ));
+    let factory = dependency_factory.sandbox_provider();
 
     let mut sandbox = factory
-        .spawn_sandbox()
+        .provide_sandbox()
         .await
         .expect("failed to create sandbox");
     sandbox.start().await.expect("failed to start sandbox");

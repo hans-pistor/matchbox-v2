@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::process::Command;
 
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
@@ -13,8 +14,8 @@ use firecracker_config_rs::models::network_interface::NetworkInterfaceBuilder;
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
 
 use crate::jailer::client::Action;
-use crate::jailer::factory::JailedFirecrackerFactory;
-use crate::jailer::{JailedFirecracker, JailedPathResolver};
+use crate::jailer::factory::{ProvideFirecracker};
+use crate::jailer::{FirecrackerProcess, PathResolver};
 use crate::util;
 
 use self::id::{ProvideIdentifier, VmIdentifier};
@@ -38,7 +39,7 @@ pub struct Sandbox {
     id: VmIdentifier,
     state: SandboxState,
     network: Network,
-    pub jailed_firecracker: JailedFirecracker,
+    pub jailed_firecracker: FirecrackerProcess,
     virtual_machine_config: VirtualMachine,
     client: SparkClient,
 }
@@ -52,7 +53,7 @@ impl Sandbox {
         &self.network
     }
 
-    pub fn path_resolver(&self) -> &JailedPathResolver {
+    pub fn path_resolver(&self) -> &PathResolver {
         &self.jailed_firecracker.path_resolver
     }
 
@@ -96,18 +97,18 @@ impl ProvideSandbox for SandboxFactory {
 
 #[derive(Debug)]
 pub struct SandboxFactory {
-    identifier_factory: Box<dyn ProvideIdentifier>,
-    spark_factory: Box<dyn ProvideSparkClient>,
-    firecracker_factory: JailedFirecrackerFactory,
-    sandbox_initializer: SandboxInitializer,
+    identifier_factory: Arc<Box<dyn ProvideIdentifier>>,
+    spark_factory: Arc<Box<dyn ProvideSparkClient>>,
+    firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
+    sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
 }
 
 impl SandboxFactory {
     pub fn new(
-        identifier_factory: Box<dyn ProvideIdentifier>,
-        spark_factory: Box<dyn ProvideSparkClient>,
-        firecracker_factory: JailedFirecrackerFactory,
-        sandbox_initializer: SandboxInitializer,
+        identifier_factory: Arc<Box<dyn ProvideIdentifier>>,
+        spark_factory: Arc<Box<dyn ProvideSparkClient>>,
+        firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
+        sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
     ) -> SandboxFactory {
         SandboxFactory {
             identifier_factory,
@@ -153,9 +154,9 @@ impl SandboxFactory {
         let network = Network::new(&id, &virtual_machine_config.network_interfaces)?;
         let jailed_firecracker = self
             .firecracker_factory
-            .spawn_jailed_firecracker(id.id(), &network.netns_path()?);
+            .provide_firecracker(id.id(), &network.netns_path()?);
 
-        let sandbox = Sandbox {
+        let mut sandbox = Sandbox {
             id,
             state: SandboxState::Stopped,
             jailed_firecracker,
@@ -167,9 +168,23 @@ impl SandboxFactory {
             network,
         };
 
-        let sandbox = self.sandbox_initializer.initialize(sandbox).await?;
+        self.sandbox_initializer
+            .initialize_sandbox(&mut sandbox)
+            .await?;
 
         Ok(sandbox)
+    }
+}
+
+#[async_trait::async_trait]
+pub trait InitializeSandbox: Debug + Send + Sync {
+    async fn initialize_sandbox(&self, sandbox: &mut Sandbox) -> anyhow::Result<()>;
+}
+
+#[async_trait::async_trait]
+impl InitializeSandbox for SandboxInitializer {
+    async fn initialize_sandbox(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
+        self.initialize(sandbox).await
     }
 }
 
@@ -187,18 +202,17 @@ impl SandboxInitializer {
         }
     }
 
-    pub async fn initialize(&self, mut sandbox: Sandbox) -> anyhow::Result<Sandbox> {
-        self.wait_for_health_check(&sandbox).await?;
-        self.setup_logging(&sandbox).await?;
-        self.setup_bootsource(&sandbox).await?;
-        self.setup_drives(&sandbox).await?;
-        self.setup_network_interfaces(&sandbox).await?;
+    pub async fn initialize(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
+        self.wait_for_health_check(sandbox).await?;
+        self.setup_logging(sandbox).await?;
+        self.setup_bootsource(sandbox).await?;
+        self.setup_drives(sandbox).await?;
+        self.setup_network_interfaces(sandbox).await?;
 
         sandbox.start().await?;
 
-        let sandbox = self.wait_for_spark_health_check(sandbox).await?;
-
-        Ok(sandbox)
+        self.wait_for_spark_health_check(sandbox).await?;
+        Ok(())
     }
 
     async fn wait_for_health_check(&self, sandbox: &Sandbox) -> anyhow::Result<()> {
@@ -295,12 +309,12 @@ impl SandboxInitializer {
         Ok(())
     }
 
-    async fn wait_for_spark_health_check(&self, mut sandbox: Sandbox) -> anyhow::Result<Sandbox> {
+    async fn wait_for_spark_health_check(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
         let client = sandbox.client().await;
         let start = Instant::now();
         while start.elapsed() < Duration::from_secs(10) {
             if client.health_check().await.is_ok() {
-                return Ok(sandbox);
+                return Ok(());
             }
             tokio::time::sleep(Duration::from_millis(500)).await;
         }

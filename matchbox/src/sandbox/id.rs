@@ -11,7 +11,7 @@ pub trait ProvideIdentifier: Debug + Send + Sync {
     fn provide_identifier(&self) -> VmIdentifier;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct VmIdentifierFactory;
 
 impl ProvideIdentifier for VmIdentifierFactory {
