@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     jailer::factory::{JailedFirecrackerFactory, ProvideFirecracker},
@@ -14,6 +14,7 @@ pub struct DependencyFactory {
     sandbox_initialixer: Arc<Box<dyn InitializeSandbox>>,
     identifier_provider: Arc<Box<dyn ProvideIdentifier>>,
     spark_client_provider: Arc<Box<dyn ProvideSparkClient>>,
+    dummy_drive_path: PathBuf,
 }
 
 impl DependencyFactory {
@@ -23,6 +24,7 @@ impl DependencyFactory {
             self.spark_client_provider.clone(),
             self.firecracker_provider.clone(),
             self.sandbox_initialixer.clone(),
+            self.dummy_drive_path.clone(),
         );
         Box::new(sandbox_provider)
     }
@@ -83,11 +85,17 @@ impl Default for DependencyFactory {
         let identifier_provider: Box<dyn ProvideIdentifier> = Box::<VmIdentifierFactory>::default();
         let spark_client_provider: Box<dyn ProvideSparkClient> =
             Box::<SparkClientFactory>::default();
+        let dummy_drive_path = PathBuf::from("/tmp/dummy.ext4");
+        assert!(
+            dummy_drive_path.exists(),
+            "The dummy drive path should exist"
+        );
         Self {
             firecracker_provider: Arc::from(firecracker_provider),
             sandbox_initialixer: Arc::from(sandbox_initializer),
             identifier_provider: Arc::from(identifier_provider),
             spark_client_provider: Arc::from(spark_client_provider),
+            dummy_drive_path,
         }
     }
 }

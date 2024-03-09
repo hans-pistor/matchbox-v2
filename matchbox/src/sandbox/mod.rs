@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::fs::OpenOptions;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use std::sync::Arc;
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::jailer::client::Action;
 use crate::jailer::factory::ProvideFirecracker;
 use crate::jailer::{FirecrackerProcess, PathResolver};
-use crate::util;
+use crate::util::{self, copy};
 
 use self::id::{ProvideIdentifier, VmIdentifier};
 use self::network::Network;
@@ -135,6 +135,7 @@ pub struct SandboxFactory {
     spark_factory: Arc<Box<dyn ProvideSparkClient>>,
     firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
     sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
+    dummy_drive_path: PathBuf,
 }
 
 impl SandboxFactory {
@@ -143,12 +144,14 @@ impl SandboxFactory {
         spark_factory: Arc<Box<dyn ProvideSparkClient>>,
         firecracker_factory: Arc<Box<dyn ProvideFirecracker>>,
         sandbox_initializer: Arc<Box<dyn InitializeSandbox>>,
+        dummy_drive_path: PathBuf,
     ) -> SandboxFactory {
         SandboxFactory {
             identifier_factory,
             spark_factory,
             firecracker_factory,
             sandbox_initializer,
+            dummy_drive_path,
         }
     }
 
@@ -202,24 +205,32 @@ impl SandboxFactory {
             network,
         };
 
-        if let Some(code_drive) = options.code_drive_location {
-            let path_to_drive = sandbox.path_resolver().resolve("/drives/code-drive.ext4");
-            util::copy(code_drive.to_local_path()?, path_to_drive)?;
-            sandbox.virtual_machine_config.drives.push(
-                DriveBuilder::default()
-                    .drive_id("code_drive")
-                    .path_on_host("/drives/code-drive.ext4")
-                    .is_root_device(false)
-                    .is_read_only(false)
-                    .build()?,
-            )
-        }
+        copy_if_exists(
+            &options.code_drive_location,
+            sandbox.path_resolver().resolve("/drives/code-drive.ext4"),
+            &self.dummy_drive_path,
+        )?;
+        sandbox.virtual_machine_config.drives.push(
+            DriveBuilder::default()
+                .drive_id("code_drive")
+                .path_on_host("/drives/code-drive.ext4")
+                .is_root_device(false)
+                .is_read_only(false)
+                .build()?,
+        );
 
         self.sandbox_initializer
             .initialize_sandbox(&mut sandbox)
             .await?;
 
         Ok(sandbox)
+    }
+}
+
+fn copy_if_exists(file: &Option<Location>, path: PathBuf, dummy_path: &Path) -> anyhow::Result<()> {
+    match file {
+        Some(file) => copy(file.to_local_path()?, path),
+        None => copy(dummy_path, path),
     }
 }
 
