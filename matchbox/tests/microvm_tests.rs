@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use matchbox::{
     jailer::factory::JailedFirecrackerFactory,
-    sandbox::{SandboxFactory, SandboxInitializer},
+    sandbox::{id::VmIdentifierFactory, SandboxFactory, SandboxInitializer},
 };
 
 use crate::common::{ping, wait_until};
@@ -18,7 +18,11 @@ async fn test_spawning_a_uvm() {
         "/tmp/vms",
     );
     let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
-    let factory = Box::new(SandboxFactory::new(factory, sandbox_initializer));
+    let factory = Box::new(SandboxFactory::new(
+        Box::new(VmIdentifierFactory),
+        factory,
+        sandbox_initializer,
+    ));
 
     let mut sandbox = factory
         .spawn_sandbox()

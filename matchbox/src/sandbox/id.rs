@@ -1,9 +1,24 @@
+use std::fmt::Debug;
+
 use rand::Rng;
 
 const MAX_NETWORK_START_BLOCK: u64 = 15299;
 // since we assign 4 ips per address block, 60 * 4 = 240, leaving the last 15
 // ips open.
 const GROUPS_IN_LAST_BLOCK: u64 = 60;
+
+pub trait ProvideIdentifier: Debug + Send + Sync {
+    fn provide_identifier(&self) -> VmIdentifier;
+}
+
+#[derive(Debug)]
+pub struct VmIdentifierFactory;
+
+impl ProvideIdentifier for VmIdentifierFactory {
+    fn provide_identifier(&self) -> VmIdentifier {
+        VmIdentifier::default()
+    }
+}
 
 const ALPHABET: [char; 62] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
