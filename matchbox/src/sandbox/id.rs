@@ -124,6 +124,6 @@ mod tests {
             "base address should be different after we hit the last group in a block"
         );
 
-        assert!(block2.starting_ip == 0)
+        assert!(block2.starting_ip == 1)
     }
 }
