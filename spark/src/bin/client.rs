@@ -1,5 +1,5 @@
-use spark::grpc::guest_agent_client::GuestAgentClient;
-use spark::grpc::HealthCheckRequest;
+use sparklib::grpc::guest_agent_client::GuestAgentClient;
+use sparklib::grpc::HealthCheckRequest;
 use tonic::Request;
 
 #[tokio::main]

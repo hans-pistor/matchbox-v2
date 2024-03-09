@@ -1,5 +1,5 @@
-use spark::grpc::guest_agent_server::{GuestAgent, GuestAgentServer};
-use spark::grpc::{HealthCheckRequest, HealthCheckResponse};
+use sparklib::grpc::guest_agent_server::{GuestAgent, GuestAgentServer};
+use sparklib::grpc::{HealthCheckRequest, HealthCheckResponse};
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
