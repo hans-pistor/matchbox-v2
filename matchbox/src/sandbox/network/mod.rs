@@ -5,26 +5,43 @@ use std::path::PathBuf;
 
 use self::commands::{IpCommand, IpTablesCommand, Table, Target};
 
-use super::id::VmIdentifier;
+use super::id::{AddressBlock, VmIdentifier};
 
 mod commands;
 
 pub const HOST_INTERFACE_NAME: &str = "ens4";
 pub const DEFAULT_CIDR_BLOCK: &str = "172.16.0.1/30";
 
+enum IpAddressType {
+    Veth,
+    Vpeer,
+    Microvm,
+}
+
+impl From<IpAddressType> for u64 {
+    fn from(value: IpAddressType) -> Self {
+        match value {
+            IpAddressType::Veth => 0,
+            IpAddressType::Vpeer => 1,
+            IpAddressType::Microvm => 2,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Network {
     namespace_name: String,
-    address_start: u64,
+    address_block: AddressBlock,
 }
 
 impl Network {
     pub fn new(id: &VmIdentifier, interfaces: &[NetworkInterface]) -> anyhow::Result<Network> {
         // Create the network namespace
         let _ = NetNs::new(id.id())?;
+
         let network = Self {
             namespace_name: id.id().into(),
-            address_start: id.address_block(),
+            address_block: id.address_block().clone(),
         };
         network.setup(interfaces)?;
 
@@ -47,18 +64,19 @@ impl Network {
 
     pub fn veth(&self) -> (String, String) {
         let veth_name = format!("{}-veth", self.namespace_name);
-        let veth_address = format!("10.200.{}.10", self.address_start);
+        let veth_address = self.address_block.get_ip(IpAddressType::Veth);
+
         (veth_name, veth_address)
     }
 
     pub fn vpeer(&self) -> (String, String) {
         let vpeer_name = format!("{}-vpeer", self.namespace_name);
-        let vpeer_address = format!("10.200.{}.11", self.address_start);
+        let vpeer_address = self.address_block.get_ip(IpAddressType::Vpeer);
         (vpeer_name, vpeer_address)
     }
 
     pub fn microvm_ip(&self) -> String {
-        format!("10.200.{}.12", self.address_start)
+        self.address_block.get_ip(IpAddressType::Microvm)
     }
 
     fn setup_interfaces(
