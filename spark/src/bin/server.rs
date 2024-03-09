@@ -1,5 +1,8 @@
+use std::fs::create_dir_all;
+use std::process::Command;
+
 use sparklib::grpc::guest_agent_server::{GuestAgent, GuestAgentServer};
-use sparklib::grpc::{HealthCheckRequest, HealthCheckResponse};
+use sparklib::grpc::{HealthCheckRequest, HealthCheckResponse, MountRequest, MountResponse};
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
@@ -18,6 +21,22 @@ pub async fn main() -> anyhow::Result<()> {
 #[derive(Debug, Default)]
 pub struct SparkServer {}
 
+impl SparkServer {
+    pub fn handle_mount_request(&self, request: &MountRequest) -> anyhow::Result<()> {
+        std::fs::create_dir_all(&request.path)?;
+        let mut cmd = Command::new("mount");
+        let output = cmd.args([&request.device, &request.path]).output()?;
+        if !output.status.success() {
+            anyhow::bail!(
+                "mount command failed: {}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        Ok(())
+    }
+}
+
 #[tonic::async_trait]
 impl GuestAgent for SparkServer {
     async fn health_check(
@@ -25,5 +44,14 @@ impl GuestAgent for SparkServer {
         _request: Request<HealthCheckRequest>,
     ) -> Result<Response<HealthCheckResponse>, Status> {
         Ok(Response::new(HealthCheckResponse {}))
+    }
+
+    async fn mount(
+        &self,
+        request: Request<MountRequest>,
+    ) -> Result<Response<MountResponse>, Status> {
+        self.handle_mount_request(request.get_ref())
+            .map_err(|e| Status::internal(e.to_string()))?;
+        Ok(Response::new(MountResponse {}))
     }
 }

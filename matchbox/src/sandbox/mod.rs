@@ -212,7 +212,7 @@ impl SandboxFactory {
         )?;
         sandbox.virtual_machine_config.drives.push(
             DriveBuilder::default()
-                .drive_id("code_drive")
+                .drive_id("vdb")
                 .path_on_host("/drives/code-drive.ext4")
                 .is_root_device(false)
                 .is_read_only(false)
@@ -270,6 +270,7 @@ impl SandboxInitializer {
         sandbox.start().await?;
 
         self.wait_for_spark_health_check(sandbox).await?;
+        self.mount_drives_in_guest(sandbox).await?;
         Ok(())
     }
 
@@ -375,5 +376,22 @@ impl SandboxInitializer {
         }
 
         anyhow::bail!("sandbox {} spark-server never became healthy", sandbox.id())
+    }
+
+    async fn mount_drives_in_guest(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
+        for drive in &sandbox.virtual_machine_config.drives {
+            if drive.drive_id == "rootfs" {
+                continue;
+            }
+
+            sandbox
+                .client
+                .mount_drive(
+                    format!("/dev/{}", drive.drive_id),
+                    format!("/tmp/{}", drive.drive_id),
+                )
+                .await?;
+        }
+        Ok(())
     }
 }
