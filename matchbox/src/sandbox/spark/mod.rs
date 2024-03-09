@@ -1,7 +1,7 @@
 use anyhow::Context;
 use sparklib::grpc::{
-    guest_agent_client::GuestAgentClient, HealthCheckRequest, HealthCheckResponse, MountRequest,
-    MountResponse,
+    guest_agent_client::GuestAgentClient, ExecuteRequest, ExecuteResponse, HealthCheckRequest,
+    HealthCheckResponse, MountRequest, MountResponse,
 };
 use tonic::{
     transport::{Channel, Endpoint},
@@ -43,5 +43,18 @@ impl SparkClient {
             .await
             .map(|r| r.into_inner())
             .context("failed to mount drive in uVM")
+    }
+
+    pub async fn execute(
+        &mut self,
+        command: String,
+        arguments: Vec<String>,
+    ) -> anyhow::Result<ExecuteResponse> {
+        let request = Request::new(ExecuteRequest { command, arguments });
+        self.client
+            .execute(request)
+            .await
+            .map(|r| r.into_inner())
+            .context("failed to execute command in uVM")
     }
 }
