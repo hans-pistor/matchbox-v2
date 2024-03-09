@@ -14,6 +14,7 @@ use firecracker_config_rs::models::logger::{LogLevel, LoggerBuilder};
 use firecracker_config_rs::models::network_interface::NetworkInterfaceBuilder;
 use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMachineBuilder};
 use serde::{Deserialize, Serialize};
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::jailer::client::Action;
 use crate::jailer::factory::ProvideFirecracker;
@@ -43,7 +44,7 @@ pub struct Sandbox {
     network: Network,
     pub jailed_firecracker: FirecrackerProcess,
     virtual_machine_config: VirtualMachine,
-    client: SparkClient,
+    client: Mutex<SparkClient>,
 }
 
 impl Sandbox {
@@ -59,8 +60,8 @@ impl Sandbox {
         &self.jailed_firecracker.path_resolver
     }
 
-    pub async fn client(&mut self) -> &mut SparkClient {
-        &mut self.client
+    pub async fn client(&self) -> MutexGuard<SparkClient> {
+        self.client.lock().await
     }
 
     pub async fn start(&mut self) -> anyhow::Result<()> {
@@ -198,10 +199,11 @@ impl SandboxFactory {
             state: SandboxState::Stopped,
             jailed_firecracker,
             virtual_machine_config,
-            client: self
-                .spark_factory
-                .provide_spark_client(&network.microvm_ip())
-                .await?,
+            client: Mutex::new(
+                self.spark_factory
+                    .provide_spark_client(&network.microvm_ip())
+                    .await?,
+            ),
             network,
         };
 
@@ -366,7 +368,7 @@ impl SandboxInitializer {
     }
 
     async fn wait_for_spark_health_check(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
-        let client = sandbox.client().await;
+        let mut client = sandbox.client().await;
         let start = Instant::now();
         while start.elapsed() < Duration::from_secs(10) {
             if client.health_check().await.is_ok() {
@@ -379,13 +381,13 @@ impl SandboxInitializer {
     }
 
     async fn mount_drives_in_guest(&self, sandbox: &mut Sandbox) -> anyhow::Result<()> {
+        let mut client = sandbox.client().await;
         for drive in &sandbox.virtual_machine_config.drives {
             if drive.drive_id == "rootfs" {
                 continue;
             }
 
-            sandbox
-                .client
+            client
                 .mount_drive(
                     format!("/dev/{}", drive.drive_id),
                     format!("/tmp/{}", drive.drive_id),

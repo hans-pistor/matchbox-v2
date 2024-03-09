@@ -5,6 +5,7 @@ use crate::sandbox::Sandbox;
 
 pub mod create;
 pub mod delete;
+pub mod execute;
 pub mod list;
 
 #[derive(Serialize, Deserialize, Debug)]

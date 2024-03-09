@@ -1,8 +1,10 @@
-use std::fs::create_dir_all;
 use std::process::Command;
 
 use sparklib::grpc::guest_agent_server::{GuestAgent, GuestAgentServer};
-use sparklib::grpc::{HealthCheckRequest, HealthCheckResponse, MountRequest, MountResponse};
+use sparklib::grpc::{
+    ExecuteRequest, ExecuteResponse, HealthCheckRequest, HealthCheckResponse, MountRequest,
+    MountResponse,
+};
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
@@ -35,6 +37,27 @@ impl SparkServer {
         }
         Ok(())
     }
+
+    pub fn handle_execute_request(
+        &self,
+        request: &ExecuteRequest,
+    ) -> anyhow::Result<ExecuteResponse> {
+        let mut cmd = Command::new(&request.command);
+        let output = cmd.args(&request.arguments).output()?;
+        if !output.status.success() {
+            anyhow::bail!(
+                "execute {} {} failed: {}\n{}",
+                request.command,
+                request.arguments.join(" "),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        Ok(ExecuteResponse {
+            output: String::from_utf8_lossy(&output.stdout).to_string(),
+        })
+    }
 }
 
 #[tonic::async_trait]
@@ -53,5 +76,14 @@ impl GuestAgent for SparkServer {
         self.handle_mount_request(request.get_ref())
             .map_err(|e| Status::internal(e.to_string()))?;
         Ok(Response::new(MountResponse {}))
+    }
+
+    async fn execute(
+        &self,
+        request: Request<ExecuteRequest>,
+    ) -> Result<Response<ExecuteResponse>, Status> {
+        self.handle_execute_request(request.get_ref())
+            .map_err(|e| Status::internal(e.to_string()))
+            .map(Response::new)
     }
 }

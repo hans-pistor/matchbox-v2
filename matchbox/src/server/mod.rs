@@ -55,6 +55,10 @@ impl Application {
                 "/sandbox/:id",
                 delete(routes::sandbox::delete::delete_sandbox),
             )
+            .route(
+                "/sandbox/:id/execute",
+                post(routes::sandbox::execute::execute_sandbox),
+            )
             .with_state(state);
         Ok(Application { listener, router })
     }

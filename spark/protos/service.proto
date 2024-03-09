@@ -4,6 +4,7 @@ package spark;
 service GuestAgent {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
     rpc Mount (MountRequest) returns (MountResponse);
+    rpc Execute (ExecuteRequest) returns (ExecuteResponse);
 } 
 
 message HealthCheckRequest {}
@@ -15,3 +16,12 @@ message MountRequest {
 }
 
 message MountResponse {}
+
+message ExecuteRequest {
+    string command = 1;
+    repeated string arguments = 2;
+}
+
+message ExecuteResponse {
+    string output = 1;
+}
