@@ -5,6 +5,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::sandbox::Sandbox;
+
 use super::ApplicationState;
 
 pub type ApiResult<T> = Result<T, error::ApiError>;
@@ -13,6 +15,15 @@ pub type ApiResult<T> = Result<T, error::ApiError>;
 pub struct SandboxResponse {
     id: String,
     ip: String,
+}
+
+impl From<&Sandbox> for SandboxResponse {
+    fn from(value: &Sandbox) -> Self {
+        SandboxResponse {
+            id: value.id().to_string(),
+            ip: value.network().microvm_ip(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,10 +43,7 @@ pub async fn list_sandboxes(
     let sandboxes = state.sandboxes().read().await;
     let sandboxes = sandboxes
         .iter()
-        .map(|(sbid, sb)| SandboxResponse {
-            id: sbid.clone(),
-            ip: sb.network().microvm_ip(),
-        })
+        .map(|(_, sb)| SandboxResponse::from(sb))
         .collect();
     Ok(ListSandboxesResponse { sandboxes })
 }
@@ -48,15 +56,14 @@ impl IntoResponse for SandboxResponse {
 
 pub async fn create_sandbox(State(state): State<ApplicationState>) -> ApiResult<SandboxResponse> {
     let factory = state.sandbox_factory();
-    let mut sandbox = factory.provide_sandbox().await?;
-    sandbox.start().await?;
-    let id = sandbox.id().to_string();
-    let ip = sandbox.network().microvm_ip();
+    let sandbox = factory.provide_sandbox().await?;
+
+    let response = SandboxResponse::from(&sandbox);
     {
         let mut sandboxes = state.sandboxes().write().await;
-        sandboxes.insert(id.clone(), sandbox);
+        sandboxes.insert(sandbox.id().to_string(), sandbox);
     }
-    Ok(SandboxResponse { id, ip })
+    Ok(response)
 }
 
 pub async fn delete_sandbox(
@@ -69,10 +76,7 @@ pub async fn delete_sandbox(
     };
 
     match sandbox {
-        Some(sandbox) => Ok(SandboxResponse {
-            id: sandbox.id().to_string(),
-            ip: sandbox.network().microvm_ip(),
-        }),
+        Some(sandbox) => Ok(SandboxResponse::from(&sandbox)),
         None => Err(anyhow::anyhow!("Sandbox with id {sandbox_id} does not exist").into()),
     }
 }
