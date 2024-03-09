@@ -1,5 +1,7 @@
 use anyhow::Context;
-use sparklib::grpc::{guest_agent_client::GuestAgentClient, HealthCheckRequest};
+use sparklib::grpc::{
+    guest_agent_client::GuestAgentClient, HealthCheckRequest, HealthCheckResponse,
+};
 use tonic::{transport::Channel, Request};
 
 #[derive(Debug, Clone)]
@@ -14,13 +16,12 @@ impl SparkClient {
         Ok(SparkClient { client })
     }
 
-    pub async fn health_check(&mut self) -> anyhow::Result<()> {
+    pub async fn health_check(&mut self) -> anyhow::Result<HealthCheckResponse> {
         let request = Request::new(HealthCheckRequest {});
         self.client
             .health_check(request)
             .await
-            .map(|_| ())
-            .inspect_err(|e| println!("{e:?}"))
+            .map(|r| r.into_inner())
             .context("health check failed for uVM")
     }
 }
