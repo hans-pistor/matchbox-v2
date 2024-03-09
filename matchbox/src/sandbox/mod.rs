@@ -211,7 +211,7 @@ impl SandboxInitializer {
 
         sandbox.start().await?;
 
-        // self.wait_for_spark_health_check(sandbox).await?;
+        self.wait_for_spark_health_check(sandbox).await?;
         Ok(())
     }
 
