@@ -3,7 +3,15 @@ package spark;
 
 service GuestAgent {
     rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+    rpc Mount (MountRequest) returns (MountResponse);
 } 
 
 message HealthCheckRequest {}
 message HealthCheckResponse {}
+
+message MountRequest {
+    string device = 1;
+    string path = 2;
+}
+
+message MountResponse {}
