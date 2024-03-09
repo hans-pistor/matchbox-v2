@@ -36,4 +36,5 @@ COPY usr /usr
 # This still takes ~5s so there's room for improvement
 RUN rc-update add rngd \ 
     && rc-update add firecracker-networking \
-    && rc-update add sshd
+    && rc-update add sshd \
+    && rc-update add spark-server

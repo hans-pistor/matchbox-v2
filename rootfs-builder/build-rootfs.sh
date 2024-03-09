@@ -7,6 +7,8 @@ DOCKER_TAG='rootfs-builder'
 
 
 rm -f $ROOTFS_FILE
+sudo umount $HOST_ROOTFS_DIR || true
+sudo rm -rf $HOST_ROOTFS_DIR
 
 # Create file
 dd if=/dev/zero of=$ROOTFS_FILE bs=1M count=1024
@@ -15,7 +17,7 @@ dd if=/dev/zero of=$ROOTFS_FILE bs=1M count=1024
 sudo mkfs.ext4 $ROOTFS_FILE
 
 # Make sure directory is created
-sudo rm -rf $HOST_ROOTFS_DIR && mkdir -p $HOST_ROOTFS_DIR
+mkdir -p $HOST_ROOTFS_DIR
 
 # Mount the filesystem 
 sudo mount $ROOTFS_FILE $HOST_ROOTFS_DIR
