@@ -20,3 +20,5 @@ serde_json = "1.0.114"
 tokio = { version = "1.36.0", features = ["full"] }
 users = "0.11.0"
 uuid = { version = "1.7.0", features = ["v4"] }
+spark = { path  = "../spark" }
+tonic = "0.11.0"

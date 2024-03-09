@@ -1,0 +1,43 @@
+#!/sbin/openrc-run
+
+mkdir -p /var/run
+mkdir -p /var/log
+BINARY="/usr/bin/spark-server"
+PIDFILE=/var/run/spark.pid
+LOGFILE=/var/log/spark.log
+
+start() {
+    if [ -f $PIDFILE ] && [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE); then
+        echo "server is already running" >&2
+        return 1
+    fi
+
+    echo "starting spark-server process" >&2
+    local CMD="$BINARY &> \"$LOGFILE\" & echo \$!"
+    local CMD="$BINARY &> \"$LOGFILE\" & echo \$!"
+
+    su -c "$CMD" root > "$PIDFILE"
+
+    sleep 2
+
+    PID=$(cat $PIDFILE)
+    if pgrep -f "spark" > /dev/null
+    then
+        echo "spark-server is now running under PID $PID"
+    else
+        echo "failed to start the spark server"
+    fi
+
+
+    return 0
+}
+
+stop() {
+    if [ ! -f "$PIDFILE" ] || ! kill -0 $(cat "$PIDFILE"); then
+        echo 'service not running' >&2
+        return 1
+    fi
+    echo 'stopping service…' >&2
+    kill -15 $(cat "$PIDFILE") && rm -f "$PIDFILE"
+    echo 'service stopped' >&2
+}

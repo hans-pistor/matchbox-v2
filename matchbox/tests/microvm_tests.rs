@@ -7,6 +7,7 @@ use matchbox::{
     jailer::factory::JailedFirecrackerFactory,
     sandbox::{
         id::{ProvideIdentifier, VmIdentifier, VmIdentifierFactory},
+        spark::factory::SparkClientFactory,
         SandboxFactory, SandboxInitializer,
     },
 };
@@ -26,6 +27,7 @@ async fn test_spawning_a_uvm() {
     let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
     let factory = Box::new(SandboxFactory::new(
         Box::new(VmIdentifierFactory),
+        Box::new(SparkClientFactory),
         factory,
         sandbox_initializer,
     ));
@@ -62,6 +64,7 @@ async fn test_spawning_next_door_vms() {
 
     let factory = Box::new(SandboxFactory::new(
         Box::new(MockIdentifierFactory),
+        Box::new(SparkClientFactory),
         factory,
         sandbox_initializer,
     ));

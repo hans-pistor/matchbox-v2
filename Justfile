@@ -2,9 +2,10 @@ export IS_RELEASE := env_var_or_default("IS_RELEASE", "false")
 
 build-rootfs: build
   if $IS_RELEASE; \
-  then cp ./target/release/spark-server ./rootfs-builder/usr/bin/spark-server; \
-  else cp ./target/debug/spark-server ./rootfs-builder/usr/bin/spark-server; \
+  then cp ./target/x86_64-unknown-linux-musl/release/spark-server ./rootfs-builder/usr/bin/spark-server; \
+  else cp ./target/x86_64-unknown-linux-musl/debug/spark-server ./rootfs-builder/usr/bin/spark-server; \
   fi
+  chmod +x ./rootfs-builder/usr/bin/spark-server
   ./rootfs-builder/build-rootfs.sh
 
 run-rootfs: 
@@ -14,7 +15,7 @@ build:
   if $IS_RELEASE; then cargo build --release; else cargo build; fi
 
 run: host-networking-setup build
-  if $IS_RELEASE; then sudo ./target/release/matchbox; else sudo ./target/debug/matchbox; fi
+  if $IS_RELEASE; then sudo ./target/x86_64-unknown-linux-musl/release/matchbox; else sudo ./target/x86_64-unknown-linux-musl/debug/matchbox; fi
 
 host-networking-setup:
   # Enable ipv4 forwarding
@@ -24,4 +25,5 @@ test-all:
   cargo t -- --ignored --nocapture
   
 test PACKAGE:
+  cargo t -p {{PACKAGE}} -- --nocapture
   cargo t -p {{PACKAGE}} -- --ignored --nocapture

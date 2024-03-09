@@ -5,13 +5,30 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::sandbox::Sandbox;
+
 use super::ApplicationState;
 
 pub type ApiResult<T> = Result<T, error::ApiError>;
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct SandboxResponse {
+    id: String,
+    ip: String,
+}
+
+impl From<&Sandbox> for SandboxResponse {
+    fn from(value: &Sandbox) -> Self {
+        SandboxResponse {
+            id: value.id().to_string(),
+            ip: value.network().microvm_ip(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ListSandboxesResponse {
-    sandboxes: Vec<String>,
+    sandboxes: Vec<SandboxResponse>,
 }
 
 impl IntoResponse for ListSandboxesResponse {
@@ -24,48 +41,42 @@ pub async fn list_sandboxes(
     State(state): State<ApplicationState>,
 ) -> ApiResult<ListSandboxesResponse> {
     let sandboxes = state.sandboxes().read().await;
-    let sandboxes = sandboxes.keys().cloned().collect::<Vec<String>>();
+    let sandboxes = sandboxes
+        .iter()
+        .map(|(_, sb)| SandboxResponse::from(sb))
+        .collect();
     Ok(ListSandboxesResponse { sandboxes })
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SandboxDetailResponse {
-    id: String,
-}
-
-impl IntoResponse for SandboxDetailResponse {
+impl IntoResponse for SandboxResponse {
     fn into_response(self) -> axum::response::Response {
         Json(self).into_response()
     }
 }
 
-pub async fn create_sandbox(
-    State(state): State<ApplicationState>,
-) -> ApiResult<SandboxDetailResponse> {
+pub async fn create_sandbox(State(state): State<ApplicationState>) -> ApiResult<SandboxResponse> {
     let factory = state.sandbox_factory();
-    let mut sandbox = factory.provide_sandbox().await?;
-    sandbox.start().await?;
-    let id = sandbox.id().to_string();
+    let sandbox = factory.provide_sandbox().await?;
+
+    let response = SandboxResponse::from(&sandbox);
     {
         let mut sandboxes = state.sandboxes().write().await;
-        sandboxes.insert(id.clone(), sandbox);
+        sandboxes.insert(sandbox.id().to_string(), sandbox);
     }
-    Ok(SandboxDetailResponse { id })
+    Ok(response)
 }
 
 pub async fn delete_sandbox(
     Path(sandbox_id): Path<String>,
     State(state): State<ApplicationState>,
-) -> ApiResult<SandboxDetailResponse> {
+) -> ApiResult<SandboxResponse> {
     let sandbox = {
         let mut sandboxes = state.sandboxes().write().await;
         sandboxes.remove(&sandbox_id)
     };
 
     match sandbox {
-        Some(sandbox) => Ok(SandboxDetailResponse {
-            id: sandbox.id().to_string(),
-        }),
+        Some(sandbox) => Ok(SandboxResponse::from(&sandbox)),
         None => Err(anyhow::anyhow!("Sandbox with id {sandbox_id} does not exist").into()),
     }
 }
