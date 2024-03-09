@@ -12,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
         "/tmp/vms",
     );
     let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
-    let sandbox_factory = SandboxFactory::new(factory, sandbox_initializer);
+    let sandbox_factory = Box::new(SandboxFactory::new(factory, sandbox_initializer));
 
     let app = Application::new("0.0.0.0:3000", ApplicationState::new(sandbox_factory)).await?;
     app.run().await?;

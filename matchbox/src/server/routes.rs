@@ -43,7 +43,7 @@ pub async fn create_sandbox(
     State(state): State<ApplicationState>,
 ) -> ApiResult<SandboxDetailResponse> {
     let factory = state.sandbox_factory();
-    let mut sandbox = factory.spawn_sandbox().await?;
+    let mut sandbox = factory.provide_sandbox().await?;
     sandbox.start().await?;
     let id = sandbox.id().to_string();
     {

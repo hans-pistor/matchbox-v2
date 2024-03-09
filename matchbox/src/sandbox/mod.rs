@@ -1,8 +1,10 @@
 use std::fs::OpenOptions;
+
 use std::path::PathBuf;
 use std::process::Command;
 
 use std::time::{Duration, Instant};
+
 
 use firecracker_config_rs::models::bootsource::BootSourceBuilder;
 use firecracker_config_rs::models::drive::DriveBuilder;
@@ -69,6 +71,18 @@ impl Drop for Sandbox {
         let root_directory = self.path_resolver().resolve("/");
         let vm_directory = root_directory.parent().unwrap();
         std::fs::remove_dir_all(vm_directory).unwrap();
+    }
+}
+
+#[async_trait::async_trait]
+pub trait ProvideSandbox {
+    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox>;
+}
+
+#[async_trait::async_trait]
+impl ProvideSandbox for SandboxFactory {
+    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox> {
+        self.spawn_sandbox().await
     }
 }
 

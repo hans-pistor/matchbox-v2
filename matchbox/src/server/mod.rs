@@ -10,7 +10,7 @@ use tokio::{
     sync::RwLock,
 };
 
-use crate::sandbox::{Sandbox, SandboxFactory};
+use crate::sandbox::{ProvideSandbox, Sandbox};
 
 pub mod routes;
 
@@ -18,12 +18,12 @@ pub mod routes;
 pub struct ApplicationState(Arc<ApplicationStateInner>);
 
 pub struct ApplicationStateInner {
-    sandbox_factory: SandboxFactory,
+    sandbox_factory: Box<dyn ProvideSandbox + Send + Sync>,
     sandboxes: RwLock<HashMap<String, Sandbox>>,
 }
 
 impl ApplicationState {
-    pub fn new(sandbox_factory: SandboxFactory) -> Self {
+    pub fn new(sandbox_factory: Box<dyn ProvideSandbox + Send + Sync>) -> Self {
         Self(Arc::new(ApplicationStateInner {
             sandbox_factory,
             sandboxes: Default::default(),
@@ -34,7 +34,7 @@ impl ApplicationState {
         &self.0.sandboxes
     }
 
-    pub fn sandbox_factory(&self) -> &SandboxFactory {
+    pub fn sandbox_factory(&self) -> &Box<dyn ProvideSandbox + Send + Sync> {
         &self.0.sandbox_factory
     }
 }

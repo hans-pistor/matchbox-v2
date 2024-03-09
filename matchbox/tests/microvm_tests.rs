@@ -18,7 +18,7 @@ async fn test_spawning_a_uvm() {
         "/tmp/vms",
     );
     let sandbox_initializer = SandboxInitializer::new("/tmp/rootfs.ext4", "/tmp/kernel.bin");
-    let factory = SandboxFactory::new(factory, sandbox_initializer);
+    let factory = Box::new(SandboxFactory::new(factory, sandbox_initializer));
 
     let mut sandbox = factory
         .spawn_sandbox()
