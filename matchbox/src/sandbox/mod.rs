@@ -1,4 +1,6 @@
+use std::fmt::Debug;
 use std::fs::OpenOptions;
+
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -15,7 +17,7 @@ use crate::jailer::factory::JailedFirecrackerFactory;
 use crate::jailer::{JailedFirecracker, JailedPathResolver};
 use crate::util;
 
-use self::id::VmIdentifier;
+use self::id::{ProvideIdentifier, VmIdentifier};
 use self::network::Network;
 
 pub mod id;
@@ -72,25 +74,40 @@ impl Drop for Sandbox {
     }
 }
 
-#[derive(Clone, Debug)]
+#[async_trait::async_trait]
+pub trait ProvideSandbox {
+    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox>;
+}
+
+#[async_trait::async_trait]
+impl ProvideSandbox for SandboxFactory {
+    async fn provide_sandbox(&self) -> anyhow::Result<Sandbox> {
+        self.spawn_sandbox().await
+    }
+}
+
+#[derive(Debug)]
 pub struct SandboxFactory {
+    identifier_factory: Box<dyn ProvideIdentifier>,
     firecracker_factory: JailedFirecrackerFactory,
     sandbox_initializer: SandboxInitializer,
 }
 
 impl SandboxFactory {
     pub fn new(
+        identifier_factory: Box<dyn ProvideIdentifier>,
         firecracker_factory: JailedFirecrackerFactory,
         sandbox_initializer: SandboxInitializer,
     ) -> SandboxFactory {
         SandboxFactory {
+            identifier_factory,
             firecracker_factory,
             sandbox_initializer,
         }
     }
 
     pub async fn spawn_sandbox(&self) -> anyhow::Result<Sandbox> {
-        let id = VmIdentifier::default();
+        let id = self.identifier_factory.provide_identifier();
         let virtual_machine_config = VirtualMachineBuilder::default()
             .logger(
                 LoggerBuilder::default()
