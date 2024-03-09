@@ -158,7 +158,7 @@ impl SandboxFactory {
 
     pub async fn spawn_sandbox(&self, options: ProvideSandboxOptions) -> anyhow::Result<Sandbox> {
         let id = self.identifier_factory.provide_identifier();
-        let mut virtual_machine_config = VirtualMachineBuilder::default()
+        let virtual_machine_config = VirtualMachineBuilder::default()
             .logger(
                 LoggerBuilder::default()
                     .log_path("/log/firecracker.log")
