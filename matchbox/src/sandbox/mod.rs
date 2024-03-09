@@ -14,7 +14,7 @@ use firecracker_config_rs::models::virtual_machine::{VirtualMachine, VirtualMach
 
 use crate::jailer::client::Action;
 use crate::jailer::factory::JailedFirecrackerFactory;
-use crate::jailer::{JailedFirecracker, JailedPathResolver};
+use crate::jailer::{FirecrackerProcess, PathResolver};
 use crate::util;
 
 use self::id::{ProvideIdentifier, VmIdentifier};
@@ -38,7 +38,7 @@ pub struct Sandbox {
     id: VmIdentifier,
     state: SandboxState,
     network: Network,
-    pub jailed_firecracker: JailedFirecracker,
+    pub jailed_firecracker: FirecrackerProcess,
     virtual_machine_config: VirtualMachine,
     client: SparkClient,
 }
@@ -52,7 +52,7 @@ impl Sandbox {
         &self.network
     }
 
-    pub fn path_resolver(&self) -> &JailedPathResolver {
+    pub fn path_resolver(&self) -> &PathResolver {
         &self.jailed_firecracker.path_resolver
     }
 

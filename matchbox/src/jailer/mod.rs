@@ -7,20 +7,19 @@ pub mod config;
 pub mod factory;
 
 #[derive(Debug)]
-pub struct JailedFirecracker {
-    process: Child,
-    pub path_resolver: JailedPathResolver,
+pub struct FirecrackerProcess {
+    pub path_resolver: PathResolver,
     pub client: FirecrackerClient,
 }
 
 #[derive(Debug)]
-pub struct JailedPathResolver {
+pub struct PathResolver {
     root_directory: PathBuf,
 }
 
-impl JailedPathResolver {
-    pub fn resolve(&self, jailed_path: impl Into<PathBuf>) -> PathBuf {
-        let jailed_path = jailed_path.into();
+impl PathResolver {
+    pub fn resolve(&self, root_directory: impl Into<PathBuf>) -> PathBuf {
+        let jailed_path = root_directory.into();
         let jailed_path = jailed_path.strip_prefix("/").unwrap();
         self.root_directory.join(jailed_path)
     }

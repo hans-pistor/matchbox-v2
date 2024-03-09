@@ -1,5 +1,5 @@
 use super::{
-    client::FirecrackerClient, config::JailerConfigBuilder, JailedFirecracker, JailedPathResolver,
+    client::FirecrackerClient, config::JailerConfigBuilder, FirecrackerProcess, PathResolver,
 };
 
 use std::{
@@ -31,7 +31,7 @@ impl JailedFirecrackerFactory {
         }
     }
 
-    pub fn spawn_jailed_firecracker(&self, vm_id: &str, netns: &Path) -> JailedFirecracker {
+    pub fn spawn_jailed_firecracker(&self, vm_id: &str, netns: &Path) -> FirecrackerProcess {
         let jailer_config = JailerConfigBuilder::default()
             .jailer_path(&self.jailer_path)
             .exec_file(&self.firecracker_path)
@@ -62,19 +62,18 @@ impl JailedFirecrackerFactory {
             &jailer_config.netns.to_string_lossy(),
         ]);
 
-        let process = cmd.spawn().unwrap();
+        let _ = cmd.spawn().unwrap();
         let root_directory = self
             .chroot_base_dir
             .join(self.firecracker_path.file_stem().unwrap())
-            .join(vm_id.to_string())
+            .join(vm_id)
             .join("root");
-        let resolver = JailedPathResolver { root_directory };
+        let resolver = PathResolver { root_directory };
 
         let firecracker_socket = resolver.resolve("/run/firecracker.socket");
         let client = FirecrackerClient::new(firecracker_socket);
 
-        JailedFirecracker {
-            process,
+        FirecrackerProcess {
             path_resolver: resolver,
             client,
         }
