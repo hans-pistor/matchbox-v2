@@ -49,9 +49,12 @@ impl Application {
     pub async fn new(address: impl ToSocketAddrs, state: ApplicationState) -> anyhow::Result<Self> {
         let listener = TcpListener::bind(address).await?;
         let router = Router::new()
-            .route("/sandbox", get(routes::list_sandboxes))
-            .route("/sandbox", post(routes::create_sandbox))
-            .route("/sandbox/:id", delete(routes::delete_sandbox))
+            .route("/sandbox", get(routes::sandbox::list::list_sandboxes))
+            .route("/sandbox", post(routes::sandbox::create::create_sandbox))
+            .route(
+                "/sandbox/:id",
+                delete(routes::sandbox::delete::delete_sandbox),
+            )
             .with_state(state);
         Ok(Application { listener, router })
     }
