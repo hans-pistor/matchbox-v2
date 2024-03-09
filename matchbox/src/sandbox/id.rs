@@ -2,10 +2,8 @@ use std::fmt::Debug;
 
 use rand::Rng;
 
-const MAX_NETWORK_START_BLOCK: u64 = 15299;
-// since we assign 4 ips per address block, 60 * 4 = 240, leaving the last 15
-// ips open.
-const GROUPS_IN_LAST_BLOCK: u64 = 60;
+const MAX_NETWORK_START_BLOCK: u64 = 7199;
+const GROUPS_IN_LAST_BLOCK: u64 = 30;
 
 pub trait ProvideIdentifier: Debug + Send + Sync {
     fn provide_identifier(&self) -> VmIdentifier;
@@ -70,7 +68,7 @@ pub struct AddressBlock {
 impl From<u64> for AddressBlock {
     fn from(value: u64) -> Self {
         let block3 = value / GROUPS_IN_LAST_BLOCK;
-        let block4 = (value % GROUPS_IN_LAST_BLOCK) * 4 + 1;
+        let block4 = (value % GROUPS_IN_LAST_BLOCK) * 8;
 
         Self {
             base_address: format!("10.200.{block3}"),
@@ -81,7 +79,11 @@ impl From<u64> for AddressBlock {
 
 impl AddressBlock {
     pub fn get_ip(&self, index: impl Into<u64>) -> String {
-        format!("{}.{}", self.base_address, self.starting_ip + index.into())
+        format!(
+            "{}.{}",
+            self.base_address,
+            self.starting_ip + index.into() + 1
+        )
     }
 }
 
@@ -108,9 +110,9 @@ mod tests {
             "address block 0 & 1 should have the same base address"
         );
         assert_eq!(
-            block1.starting_ip + 4,
+            block1.starting_ip + 8,
             block2.starting_ip,
-            "next door neighbor blocks should be separated by 4"
+            "next door neighbor blocks should be separated by 8"
         );
     }
 
@@ -124,6 +126,6 @@ mod tests {
             "base address should be different after we hit the last group in a block"
         );
 
-        assert!(block2.starting_ip == 1)
+        assert!(block2.starting_ip == 0)
     }
 }
