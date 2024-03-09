@@ -1,11 +1,5 @@
 use matchbox::dependency::DependencyFactory;
-
-
-
-
 use matchbox::server::{Application, ApplicationState};
-
-
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
