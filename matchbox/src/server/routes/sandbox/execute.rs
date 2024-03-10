@@ -5,9 +5,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    server::{routes::ApiResult, ApplicationState},
-};
+use crate::server::{routes::ApiResult, ApplicationState};
 
 #[derive(Serialize, Deserialize)]
 pub struct ExecuteResponse {
@@ -36,10 +34,7 @@ pub async fn execute_sandbox(
     };
     let mut client = sandbox.client().await;
     let response = client
-        .execute(
-            "python3".to_string(),
-            ["/tmp/vdb/entrypoint.py"].map(String::from).to_vec(),
-        )
+        .execute("sh".to_string(), ["entrypoint"].map(String::from).to_vec())
         .await?;
     Ok(ExecuteResponse {
         output: response.output,
