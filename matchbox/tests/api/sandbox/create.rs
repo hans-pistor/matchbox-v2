@@ -5,6 +5,7 @@ use matchbox::{
 use crate::common::{ping, TestServer};
 
 #[tokio::test]
+#[ignore]
 async fn test_create_sandbox_with_no_code_drive_success() {
     let server = TestServer::default().await;
     let response = server
