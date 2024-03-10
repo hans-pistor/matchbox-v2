@@ -21,12 +21,9 @@ host-networking-setup:
   # Enable ipv4 forwarding
   sudo sh -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
   
-test-all: 
+test:
+  cargo t -- --nocapture
   cargo t -- --ignored --nocapture
-  
-test PACKAGE:
-  cargo t -p {{PACKAGE}} -- --nocapture
-  cargo t -p {{PACKAGE}} -- --ignored --nocapture
 
 create-sandbox:
   curl --header "Content-Type: application/json" --request POST --data '{"code_drive_path": {"type": "Local", "path": "/tmp/code-drive.img"}}' http://localhost:3000/sandbox

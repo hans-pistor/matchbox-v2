@@ -10,8 +10,8 @@ pub mod list;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SandboxResponse {
-    id: String,
-    ip: String,
+    pub id: String,
+    pub ip: String,
 }
 
 impl From<&Sandbox> for SandboxResponse {
