@@ -10,7 +10,7 @@ use super::SandboxResponse;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateSandboxRequest {
-    code_drive_path: Location,
+    pub code_drive_path: Option<Location>,
 }
 
 #[axum_macros::debug_handler]
@@ -19,10 +19,11 @@ pub async fn create_sandbox(
     Json(payload): Json<CreateSandboxRequest>,
 ) -> ApiResult<SandboxResponse> {
     let factory = state.sandbox_factory();
-    let options = ProvideSandboxOptionsBuilder::default()
-        .code_drive_location(payload.code_drive_path)
-        .build()?;
-    let sandbox = factory.provide_sandbox(options).await?;
+    let mut builder = ProvideSandboxOptionsBuilder::default();
+    if let Some(path) = payload.code_drive_path {
+        builder.code_drive_location(path);
+    }
+    let sandbox = factory.provide_sandbox(builder.build()?).await?;
 
     let response = SandboxResponse::from(&sandbox);
     {
