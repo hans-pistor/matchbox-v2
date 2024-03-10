@@ -16,6 +16,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: musl-tools # provides musl-gcc
+        version: 1.0
     
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
