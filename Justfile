@@ -27,3 +27,6 @@ test:
 
 create-sandbox:
   curl --header "Content-Type: application/json" --request POST --data '{"code_drive_path": {"type": "Local", "path": "/tmp/code-drive.img"}}' http://localhost:3000/sandbox
+
+execute-sandbox SANDBOX_ID:
+  curl --request POST http://localhost:3000/sandbox/{{SANDBOX_ID}}/execute
