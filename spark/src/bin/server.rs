@@ -42,6 +42,7 @@ impl SparkServer {
         &self,
         request: &ExecuteRequest,
     ) -> anyhow::Result<ExecuteResponse> {
+        std::env::set_current_dir("/tmp/vdb")?;
         let mut cmd = Command::new(&request.command);
         let output = cmd.args(&request.arguments).output()?;
         if !output.status.success() {
